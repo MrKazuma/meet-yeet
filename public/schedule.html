@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Schedule Meeting</title>
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#111;
+color:white;
+margin:0;
+padding:40px 20px;
+display:flex;
+justify-content:center;
+}
+
+#card{
+width:520px;
+max-width:100%;
+background:#1c1c1c;
+padding:24px;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,0.35);
+}
+
+h2{
+margin-top:0;
+color:#ff7a00;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:8px 0 12px;
+border-radius:8px;
+border:1px solid #3c3c3c;
+background:#262626;
+color:white;
+box-sizing:border-box;
+}
+
+button{
+padding:12px 16px;
+background:#ff7a00;
+border:none;
+border-radius:8px;
+color:white;
+cursor:pointer;
+}
+
+a{ color:#2b9fff; }
+
+#result{
+margin-top:16px;
+color:#d8d8d8;
+}
+
+#allMeetings{
+margin-top:20px;
+padding-left:18px;
+}
+
+#allMeetings li{
+margin:8px 0;
+}
+
+.smallBtn{
+margin-left:8px;
+padding:6px 10px;
+font-size:12px;
+background:#2b9fff;
+border:none;
+border-radius:6px;
+color:white;
+cursor:pointer;
+}
+
+.smallBtn:hover{
+background:#4aaeff;
+}
+</style>
+</head>
+
+<body>
+
+<div id="card">
+
+<h2>Schedule Meeting</h2>
+
+<input id="title" placeholder="Meeting title">
+
+<input id="time" type="datetime-local">
+
+<button onclick="schedule()">Schedule</button>
+
+<button onclick="window.location='/'" style="margin-left:8px;background:#2b9fff;">Back To Home</button>
+
+<p id="result"></p>
+
+<h3>All Scheduled Meetings</h3>
+<ul id="allMeetings">
+<li>Loading...</li>
+</ul>
+
+</div>
+
+<script>
+
+async function schedule(){
+
+const title=document.getElementById("title").value;
+const time=document.getElementById("time").value;
+
+const res=await fetch("/schedule-meeting",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({title,time})
+});
+
+const data=await res.json();
+
+if(!res.ok || !data.success){
+document.getElementById("result").innerText=data.message || "Could not schedule meeting";
+return;
+}
+
+document.getElementById("result").innerHTML=
+"Meeting Link: <a href='"+data.link+"'>"+data.link+"</a> " +
+"<button class='smallBtn' onclick='startNow(\""+data.meetingId+"\")'>Start Now</button>";
+
+document.getElementById("title").value="";
+document.getElementById("time").value="";
+
+loadAllMeetings();
+
+}
+
+async function loadAllMeetings(){
+
+const list=document.getElementById("allMeetings");
+
+try{
+const res=await fetch("/scheduled-meetings");
+const data=await res.json();
+
+if(!data.success || !data.meetings.length){
+list.innerHTML="<li>No scheduled meetings yet.</li>";
+return;
+}
+
+list.innerHTML="";
+
+data.meetings.forEach(meeting=>{
+const li=document.createElement("li");
+const when=new Date(meeting.time).toLocaleString();
+li.innerHTML=`${meeting.title} - ${when} (<a href="${meeting.link}">Join</a>) <button class="smallBtn" onclick="startNow('${meeting.meetingId}')">Start Now</button>`;
+list.appendChild(li);
+});
+
+}catch(error){
+list.innerHTML="<li>Unable to load meetings.</li>";
+}
+
+}
+
+async function startNow(meetingId){
+
+try{
+const res = await fetch(`/start-meeting/${meetingId}`,{
+method:"POST"
+});
+
+const data = await res.json();
+
+if(!res.ok || !data.success){
+document.getElementById("result").innerText=data.message || "Could not start meeting";
+return;
+}
+
+window.location = data.link;
+}catch(error){
+document.getElementById("result").innerText="Could not start meeting";
+}
+
+}
+
+loadAllMeetings();
+
+</script>
+
+</body>
+
+</html>

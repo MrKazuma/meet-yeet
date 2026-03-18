@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>VClust</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#111;
+color:white;
+}
+
+/* NAVBAR */
+
+#navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 40px;
+background:#1a1a1a;
+}
+
+#logo{
+font-size:22px;
+font-weight:bold;
+color:#ff7a00;
+}
+
+#loginBtn{
+background:#ff7a00;
+border:none;
+padding:10px 18px;
+border-radius:6px;
+color:white;
+cursor:pointer;
+}
+
+/* HERO */
+
+#hero{
+height:80vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+}
+
+#hero h1{
+font-size:48px;
+margin-bottom:10px;
+}
+
+#hero p{
+color:#aaa;
+font-size:18px;
+margin-bottom:30px;
+}
+
+#startBtn{
+background:#ff7a00;
+border:none;
+padding:14px 30px;
+font-size:18px;
+border-radius:8px;
+cursor:pointer;
+}
+
+#scheduleBtn{
+margin-top:12px;
+background:#2b9fff;
+border:none;
+padding:12px 24px;
+font-size:16px;
+border-radius:8px;
+cursor:pointer;
+color:white;
+}
+
+#scheduleBtn:hover{
+background:#4aaeff;
+}
+
+/* JOIN BOX */
+
+#joinBox{
+margin-top:30px;
+}
+
+#joinInput{
+padding:12px;
+width:220px;
+border:none;
+border-radius:6px;
+}
+
+#joinBtn{
+padding:12px 16px;
+border:none;
+background:#ff7a00;
+color:white;
+border-radius:6px;
+cursor:pointer;
+margin-left:5px;
+}
+
+#upcoming{
+margin-top:34px;
+background:#1d1d1d;
+padding:16px;
+border-radius:10px;
+width:420px;
+max-width:90%;
+text-align:left;
+}
+
+#upcoming h3{
+margin:0 0 10px;
+font-size:18px;
+color:#ff7a00;
+}
+
+#upcomingList{
+margin:0;
+padding-left:18px;
+}
+
+#upcomingList li{
+margin:8px 0;
+color:#ddd;
+}
+
+#upcomingList a{
+color:#2b9fff;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="navbar">
+
+<div id="logo">VClust</div>
+
+<button id="loginBtn" onclick="handleAuthButton()">
+Login
+</button>
+
+</div>
+
+<div id="hero">
+
+<h1>Video Meetings Made Simple</h1>
+
+<p>Start or join meetings instantly with VClust</p>
+
+<button id="startBtn" onclick="createMeeting()">
+Start New Meeting
+</button>
+
+<button id="scheduleBtn" onclick="goToSchedule()">
+Schedule Meeting
+</button>
+
+<div id="joinBox">
+
+<input id="joinInput" placeholder="Enter Meeting ID">
+
+<button id="joinBtn" onclick="joinMeeting()">
+Join
+</button>
+
+</div>
+
+<div id="upcoming">
+<h3>Upcoming Meetings</h3>
+<ul id="upcomingList">
+<li>Loading scheduled meetings...</li>
+</ul>
+</div>
+
+</div>
+
+<script>
+
+let isLoggedIn = false;
+
+async function syncAuthState(){
+const loginBtn = document.getElementById("loginBtn");
+
+try{
+const res = await fetch("/me", { credentials: "same-origin" });
+const data = await res.json();
+
+isLoggedIn = Boolean(res.ok && data.success);
+}catch(error){
+isLoggedIn = false;
+}
+
+loginBtn.textContent = isLoggedIn ? "Logout" : "Login";
+}
+
+function handleAuthButton(){
+if(isLoggedIn){
+logout();
+return;
+}
+
+const nextPath = encodeURIComponent(window.location.pathname || "/");
+window.location = "/login.html?next=" + nextPath;
+}
+
+function goToSchedule(){
+window.location = "/schedule";
+}
+
+async function logout(){
+try{
+await fetch("/logout", {
+method: "POST",
+credentials: "same-origin"
+});
+}catch(error){
+}
+
+isLoggedIn = false;
+document.getElementById("loginBtn").textContent = "Login";
+window.location = "/";
+}
+
+function joinMeeting(){
+
+const id=document.getElementById("joinInput").value;
+
+if(id){
+window.location="/room/"+id;
+}
+
+}
+
+async function loadScheduledMeetings(){
+
+const list=document.getElementById("upcomingList");
+
+try{
+const res=await fetch("/scheduled-meetings");
+const data=await res.json();
+
+if(!data.success || !data.meetings.length){
+list.innerHTML="<li>No meetings scheduled yet.</li>";
+return;
+}
+
+list.innerHTML="";
+
+data.meetings.slice(0,5).forEach(meeting=>{
+const li=document.createElement("li");
+const when=new Date(meeting.time).toLocaleString();
+li.innerHTML=`${meeting.title} - ${when} (<a href="${meeting.link}">Join</a>)`;
+list.appendChild(li);
+});
+
+}catch(error){
+list.innerHTML="<li>Unable to load scheduled meetings.</li>";
+}
+
+}
+
+loadScheduledMeetings();
+
+async function createMeeting(){
+
+if(!isLoggedIn){
+const nextPath = encodeURIComponent(window.location.pathname || "/");
+window.location = "/login.html?next=" + nextPath;
+return;
+}
+
+try{
+const res = await fetch("/create-meeting",{
+method:"POST",
+credentials:"same-origin"
+});
+
+const data = await res.json();
+
+if(res.status === 401){
+const nextPath = encodeURIComponent(window.location.pathname || "/");
+window.location = "/login.html?next=" + nextPath;
+return;
+}
+
+if(!res.ok || !data.link){
+alert("Unable to create meeting right now");
+return;
+}
+
+window.location = data.link;
+}catch(error){
+alert("Unable to create meeting right now");
+}
+
+}
+
+syncAuthState();
+
+</script>
+
+</body>
+</html>

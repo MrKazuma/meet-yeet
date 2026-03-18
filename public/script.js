@@ -1,6 +1,7 @@
 const socket = io();
 
-const roomId = window.location.pathname.substring(1) || "meeting1";
+const pathParts = window.location.pathname.split("/").filter(Boolean);
+const roomId = pathParts[0] === "room" && pathParts[1] ? pathParts[1] : "meeting1";
 
 const video = document.getElementById("localVideo");
 
@@ -31,11 +32,30 @@ let screenSharing = false;
 /* ---------------- START MEDIA ---------------- */
 
 async function startMedia(){
-    localStream = await navigator.mediaDevices.getUserMedia({
-        video:true,
-        audio:true
-    });
-    video.srcObject = localStream;
+    try{
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Camera and microphone are not supported in this browser.");
+            return;
+        }
+
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video:true,
+            audio:true
+        });
+
+        video.srcObject = localStream;
+        videoEnabled = localStream.getVideoTracks().some(track => track.enabled);
+        micEnabled = localStream.getAudioTracks().some(track => track.enabled);
+    }catch(error){
+        console.error("Media permission error:", error);
+        alert("Please allow camera and microphone permissions to use meeting controls.");
+        localStream = new MediaStream();
+        video.srcObject = localStream;
+        videoEnabled = false;
+        micEnabled = false;
+        videoIcon.src = "/icons/camera-off.jpg";
+        micIcon.src = "/icons/mic-off.jpg";
+    }
 }
 
 startMedia();
@@ -52,26 +72,40 @@ socket.emit("join-room", {
 /* ---------------- CAMERA ---------------- */
 
 async function startCamera(){
-    const stream = await navigator.mediaDevices.getUserMedia({ video:true });
-    const track = stream.getVideoTracks()[0];
+    try{
+        if (!localStream) {
+            localStream = new MediaStream();
+        }
 
-    localStream.addTrack(track);
-    video.srcObject = localStream;
+        const existingTrack = localStream.getVideoTracks()[0];
 
-    videoEnabled = true;
-    videoIcon.src = "icons/camera-on.jpg";
+        if (existingTrack) {
+            existingTrack.enabled = true;
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+            const track = stream.getVideoTracks()[0];
+            localStream.addTrack(track);
+        }
+
+        video.srcObject = localStream;
+        videoEnabled = true;
+        videoIcon.src = "/icons/camera-on.jpg";
+    }catch(error){
+        console.error("startCamera error:", error);
+        alert("Unable to start camera. Check browser permissions.");
+    }
 }
 
 function stopCamera(){
+    if (!localStream) return;
     const tracks = localStream.getVideoTracks();
 
     tracks.forEach(track=>{
-        track.stop();
-        localStream.removeTrack(track);
+        track.enabled = false;
     });
 
     videoEnabled = false;
-    videoIcon.src = "icons/camera-off.jpg";
+    videoIcon.src = "/icons/camera-off.jpg";
 }
 
 videoBtn.onclick = ()=>{
@@ -81,19 +115,36 @@ videoBtn.onclick = ()=>{
 /* ---------------- MIC ---------------- */
 
 function stopMic(){
-    localStream.getAudioTracks().forEach(track=>track.stop());
+    if (!localStream) return;
+    localStream.getAudioTracks().forEach(track=>{
+        track.enabled = false;
+    });
     micEnabled = false;
-    micIcon.src = "icons/mic-off.jpg";
+    micIcon.src = "/icons/mic-off.jpg";
 }
 
 async function startMic(){
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-    const track = stream.getAudioTracks()[0];
+    try{
+        if (!localStream) {
+            localStream = new MediaStream();
+        }
 
-    localStream.addTrack(track);
+        const existingTrack = localStream.getAudioTracks()[0];
 
-    micEnabled = true;
-    micIcon.src = "icons/mic-on.jpg";
+        if (existingTrack) {
+            existingTrack.enabled = true;
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+            const track = stream.getAudioTracks()[0];
+            localStream.addTrack(track);
+        }
+
+        micEnabled = true;
+        micIcon.src = "/icons/mic-on.jpg";
+    }catch(error){
+        console.error("startMic error:", error);
+        alert("Unable to start microphone. Check browser permissions.");
+    }
 }
 
 micBtn.onclick = ()=>{
@@ -111,7 +162,7 @@ screenBtn.onclick = async ()=>{
         video.srcObject = screenStream;
 
         screenSharing = true;
-        screenIcon.src = "icons/screen-off.png";
+        screenIcon.src = "/icons/screen-off.png";
 
         screenStream.getVideoTracks()[0].onended = stopShare;
 
@@ -122,11 +173,15 @@ screenBtn.onclick = async ()=>{
 };
 
 function stopShare(){
+    if (!screenStream) {
+        return;
+    }
+
     screenStream.getTracks().forEach(track=>track.stop());
     video.srcObject = localStream;
 
     screenSharing = false;
-    screenIcon.src = "icons/screen-on.png";
+    screenIcon.src = "/icons/screen-on.png";
 }
 
 /* ---------------- BACKGROUND ---------------- */
@@ -166,11 +221,39 @@ socket.on("chat-message",(data)=>{
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
+socket.on("chat-history",(messages)=>{
+    chatBox.innerHTML = "";
+
+    messages.forEach((item)=>{
+        const div=document.createElement("div");
+        div.innerText = item.user + " : " + item.message;
+        chatBox.appendChild(div);
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+});
+
 /* ---------------- MEETING END ---------------- */
 
 socket.on("meeting-ended",()=>{
     alert("Meeting time has ended");
     window.location.href="/";
+});
+
+socket.on("meeting-not-started",(data)=>{
+    const when = new Date(data.scheduledTime).toLocaleString();
+    alert("This meeting is scheduled for " + when + ". Please join at the scheduled time.");
+    window.location.href = "/";
+});
+
+socket.on("meeting-not-found",()=>{
+    alert("Meeting not found.");
+    window.location.href = "/";
+});
+
+socket.on("server-error",(payload)=>{
+    alert(payload?.message || "Unable to join meeting right now.");
+    window.location.href = "/";
 });
 
 /* ---------------- PAYMENT ---------------- */

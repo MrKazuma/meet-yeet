@@ -54,6 +54,17 @@ cursor:pointer;
 
 <script>
 
+function getNextPath(){
+const params = new URLSearchParams(window.location.search);
+const next = params.get("next");
+
+if(!next || !next.startsWith("/")){
+return "/";
+}
+
+return next;
+}
+
 async function login(){
 
 const email = document.getElementById("email").value;
@@ -73,7 +84,7 @@ if(data.success){
 
 localStorage.setItem("user",JSON.stringify(data.user));
 
-window.location.href="/";
+window.location.href=getNextPath();
 
 }else{
 
