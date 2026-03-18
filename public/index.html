@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>VClust</title>
+<link rel="icon" type="image/png" href="/icons/logo.png">
+
+<script>
+const user = localStorage.getItem("user");
+if(!user){
+  window.location.href="/login.html";
+}
+</script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:#1a1a1a;
+color:white;
+overflow:hidden;
+}
+
+/* HEADER */
+
+#header{
+position:absolute;
+top:15px;
+left:20px;
+font-size:18px;
+font-weight:bold;
+color:#ff7a00;
+}
+
+/* ACCOUNT ICON */
+
+#accountIcon{
+position:absolute;
+top:10px;
+right:20px;
+cursor:pointer;
+}
+
+/* ACCOUNT PANEL */
+
+#accountPanel{
+position:absolute;
+top:60px;
+right:20px;
+width:220px;
+background:#2a2a2a;
+padding:15px;
+border-radius:10px;
+display:none;
+box-shadow:0 5px 20px rgba(0,0,0,0.5);
+z-index:10;
+}
+
+#accountPanel input{
+width:100%;
+padding:6px;
+margin-top:8px;
+margin-bottom:8px;
+border:none;
+border-radius:5px;
+}
+
+#accountPanel button{
+width:100%;
+padding:6px;
+margin-top:5px;
+background:#ff7a00;
+border:none;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+/* VIDEO AREA */
+
+#videoStage{
+position:absolute;
+top:0;
+left:0;
+right:320px;
+bottom:90px;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+#videoContainer{
+width:80%;
+height:80%;
+position:relative;
+display:flex;
+justify-content:center;
+align-items:center;
+background:black;
+border-radius:12px;
+overflow:hidden;
+}
+
+#backgroundLayer{
+position:absolute;
+width:100%;
+height:100%;
+background-size:cover;
+background-position:center;
+z-index:0;
+}
+
+video{
+position:relative;
+z-index:1;
+max-width:100%;
+max-height:100%;
+}
+
+/* CONTROL BAR */
+
+#controls{
+position:absolute;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#2a2a2a;
+padding:10px 20px;
+border-radius:50px;
+display:flex;
+gap:20px;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+.controlBtn{
+background:#3a3a3a;
+border:none;
+border-radius:50%;
+width:60px;
+height:60px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+transition:0.2s;
+}
+
+.controlBtn:hover{
+background:#ff7a00;
+}
+
+.controlBtn img{
+width:30px;
+height:30px;
+}
+
+/* BACKGROUND SELECTOR */
+
+#backgroundSelector{
+position:absolute;
+bottom:110px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:10px;
+}
+
+#backgroundSelector button{
+background:#ff7a00;
+border:none;
+color:white;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+#backgroundSelector button:hover{
+background:#ff9a3c;
+}
+
+/* CHAT PANEL */
+
+#chatPanel{
+position:absolute;
+top:0;
+right:0;
+width:320px;
+bottom:0;
+background:#2a2a2a;
+display:flex;
+flex-direction:column;
+border-left:1px solid #444;
+}
+
+#chatHeader{
+padding:15px;
+font-weight:bold;
+border-bottom:1px solid #444;
+color:#ff7a00;
+}
+
+#chatBox{
+flex:1;
+overflow-y:auto;
+padding:10px;
+}
+
+#chatInputArea{
+display:flex;
+padding:10px;
+border-top:1px solid #444;
+}
+
+#chatInput{
+flex:1;
+padding:8px;
+border-radius:6px;
+border:none;
+outline:none;
+background:#3a3a3a;
+color:white;
+}
+
+#sendBtn{
+margin-left:5px;
+background:#ff7a00;
+border:none;
+color:white;
+padding:8px 12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+#sendBtn:hover{
+background:#ff9a3c;
+}
+
+/* UPGRADE BUTTON */
+
+#upgradeBtn{
+background:#ff7a00;
+border:none;
+padding:8px 12px;
+margin:10px;
+border-radius:6px;
+cursor:pointer;
+color:white;
+}
+
+#upgradeBtn:hover{
+background:#ff9a3c;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="header">VClust Meeting</div>
+
+<div id="accountIcon" onclick="toggleAccount()">
+<img src="icons/user.png" width="30">
+</div>
+
+<div id="accountPanel">
+<h3>My Account</h3>
+<p id="userName"></p>
+<input id="nameInput" placeholder="Enter your name">
+<button onclick="saveName()">Save</button>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div id="videoStage">
+<div id="videoContainer">
+<div id="backgroundLayer"></div>
+<video id="localVideo" autoplay muted playsinline></video>
+</div>
+</div>
+
+<div id="controls">
+
+<button id="videoBtn" class="controlBtn">
+<img id="videoIcon" src="icons/camera-on.jpg">
+</button>
+
+<button id="micBtn" class="controlBtn">
+<img id="micIcon" src="icons/mic-on.jpg">
+</button>
+
+<button id="screenBtn" class="controlBtn">
+<img id="screenIcon" src="icons/screen-on.png">
+</button>
+
+</div>
+
+<div id="backgroundSelector">
+<button onclick="changeBackground('none')">None</button>
+<button onclick="changeBackground('bg1')">Office</button>
+<button onclick="changeBackground('bg2')">Nature</button>
+<button onclick="changeBackground('bg3')">Abstract</button>
+</div>
+
+<div id="chatPanel">
+
+<div id="chatHeader">Meeting Chat</div>
+
+<div id="chatBox"></div>
+
+<div id="chatInputArea">
+<input id="chatInput" type="text" placeholder="Type message...">
+<button id="sendBtn">Send</button>
+</div>
+
+<button id="upgradeBtn">Upgrade for Longer Meetings</button>
+
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+
+<script>
+
+const loggedUser = JSON.parse(localStorage.getItem("user"));
+
+if(loggedUser){
+document.getElementById("userName").innerText = loggedUser.email;
+}
+
+function logout(){
+localStorage.removeItem("user");
+window.location.href="/login.html";
+}
+
+</script>
+
+</body>
+</html>
