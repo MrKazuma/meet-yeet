@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
@@ -9,8 +10,8 @@ const path = require("path");
 const mongoose = require("mongoose");
 const Razorpay = require("razorpay");
 
-// const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/vclust";
-const mongoUri = (process.env.MONGO_URI || "mongodb+srv://vigyam:VGBK*2024@cluster0.ody53iy.mongodb.net/");
+const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/vclust";
+
 mongoose.connect(mongoUri, {
   serverSelectionTimeoutMS: 10000
 }).catch((error) => {
@@ -170,7 +171,7 @@ async function markMeetingAsEnded(meetingId) {
 
 app.use(express.json());
 app.use(session({
-  secret: process.env.SESSION_SECRET || "vclust-hardcoded-auth-secret",
+  secret: process.env.SESSION_SECRET || "fallback-secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
