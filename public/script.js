@@ -103,6 +103,19 @@ async function startMedia(){
         video.srcObject = localStream;
         videoEnabled = localStream.getVideoTracks().some(track => track.enabled);
         micEnabled = localStream.getAudioTracks().some(track => track.enabled);
+
+        // Add to existing peer connections if any were formed while waiting for permission
+        if (typeof peers !== 'undefined') {
+            for (let id in peers) {
+                localStream.getTracks().forEach(track => {
+                    // Check if not already added
+                    const senders = peers[id].getSenders();
+                    if (!senders.find(s => s.track && s.track.kind === track.kind)) {
+                        peers[id].addTrack(track, localStream);
+                    }
+                });
+            }
+        }
     }catch(error){
         console.error("Media permission error:", error);
         alert("Please allow camera and microphone permissions to use meeting controls.");
@@ -143,6 +156,12 @@ async function startCamera(){
             const stream = await navigator.mediaDevices.getUserMedia({ video:true });
             const track = stream.getVideoTracks()[0];
             localStream.addTrack(track);
+            // Add track to all peers
+            if (typeof peers !== 'undefined') {
+                for (let id in peers) {
+                    peers[id].addTrack(track, localStream);
+                }
+            }
         }
 
         video.srcObject = localStream;
@@ -195,6 +214,12 @@ async function startMic(){
             const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
             const track = stream.getAudioTracks()[0];
             localStream.addTrack(track);
+            // Add track to all peers
+            if (typeof peers !== 'undefined') {
+                for (let id in peers) {
+                    peers[id].addTrack(track, localStream);
+                }
+            }
         }
 
         micEnabled = true;
@@ -222,7 +247,16 @@ screenBtn.onclick = async ()=>{
         screenSharing = true;
         screenIcon.src = "/icons/screen-off.png";
 
-        screenStream.getVideoTracks()[0].onended = stopShare;
+        const screenTrack = screenStream.getVideoTracks()[0];
+        if (typeof peers !== 'undefined') {
+            for (let id in peers) {
+                const pc = peers[id];
+                const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+                if (sender) sender.replaceTrack(screenTrack);
+            }
+        }
+
+        screenTrack.onended = stopShare;
 
     }else{
         stopShare();
@@ -240,6 +274,17 @@ function stopShare(){
 
     screenSharing = false;
     screenIcon.src = "/icons/screen-on.png";
+
+    if (localStream && typeof peers !== 'undefined') {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            for (let id in peers) {
+                const pc = peers[id];
+                const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+                if (sender) sender.replaceTrack(videoTrack);
+            }
+        }
+    }
 }
 
 /* ---------------- END MEETING ---------------- */
@@ -448,3 +493,138 @@ function logout(){
 window.addEventListener("load",()=>{
     userNameDisplay.innerText = getDisplayName();
 });
+/* ---------------- WEBRTC PEER CONNECTIONS ---------------- */
+
+const peers = {};
+
+function createPeerConnection(peerId) {
+    const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            pc.addTrack(track, localStream);
+        });
+    }
+
+    pc.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.emit("webrtc-ice-candidate", {
+                to: peerId,
+                candidate: event.candidate
+            });
+        }
+    };
+
+    pc.ontrack = (event) => {
+        let videoArea = document.getElementById("videoStage");
+        let existingContainer = document.getElementById("container_" + peerId);
+        let existingVideo = document.getElementById("video_" + peerId);
+
+        if (!existingContainer) {
+            existingContainer = document.createElement("div");
+            existingContainer.id = "container_" + peerId;
+            existingContainer.className = "remoteVideoContainer";
+
+            existingVideo = document.createElement("video");
+            existingVideo.id = "video_" + peerId;
+            existingVideo.autoplay = true;
+            existingVideo.playsInline = true;
+
+            existingContainer.appendChild(existingVideo);
+            videoArea.appendChild(existingContainer);
+        }
+
+        existingVideo.srcObject = event.streams[0];
+    };
+
+    pc.onnegotiationneeded = async () => {
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit("webrtc-offer", {
+                to: peerId,
+                offer: pc.localDescription
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    return pc;
+}
+
+function removeRemoteVideo(peerId) {
+    const container = document.getElementById("container_" + peerId);
+    if (container) {
+        container.remove();
+    }
+}
+
+socket.on("user-connected", (participant) => {
+    if (participant && participant.id) {
+        const peerId = participant.id;
+        if (!peers[peerId]) {
+            peers[peerId] = createPeerConnection(peerId);
+        }
+    }
+});
+
+socket.on("user-disconnected", (participant) => {
+    const peerId = typeof participant === "string" ? participant : participant?.id;
+    if (peerId) {
+        if (peers[peerId]) {
+            peers[peerId].close();
+            delete peers[peerId];
+        }
+        removeRemoteVideo(peerId);
+    }
+});
+
+socket.on("webrtc-offer", async (data) => {
+    const peerId = data.from;
+    let pc = peers[peerId];
+    
+    if (!pc) {
+        pc = createPeerConnection(peerId);
+        peers[peerId] = pc;
+    }
+    
+    try {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("webrtc-answer", {
+            to: peerId,
+            answer: pc.localDescription
+        });
+    } catch (err) {
+        console.error(err);
+    }
+});
+
+socket.on("webrtc-answer", async (data) => {
+    const peerId = data.from;
+    const pc = peers[peerId];
+    if (pc) {
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
+
+socket.on("webrtc-ice-candidate", async (data) => {
+    const peerId = data.from;
+    const pc = peers[peerId];
+    if (pc && data.candidate) {
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
+

@@ -429,6 +429,28 @@ io.on("connection", socket => {
       }
     });
 
+    /* -------- WEBRTC SIGNALING -------- */
+    socket.on("webrtc-offer", (data) => {
+      io.to(data.to).emit("webrtc-offer", {
+        offer: data.offer,
+        from: socket.id
+      });
+    });
+
+    socket.on("webrtc-answer", (data) => {
+      io.to(data.to).emit("webrtc-answer", {
+        answer: data.answer,
+        from: socket.id
+      });
+    });
+
+    socket.on("webrtc-ice-candidate", (data) => {
+      io.to(data.to).emit("webrtc-ice-candidate", {
+        candidate: data.candidate,
+        from: socket.id
+      });
+    });
+
   });
 
   /* -------- PLAN UPGRADE (AFTER PAYMENT) -------- */

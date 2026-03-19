@@ -88,11 +88,18 @@ bottom:90px;
 display:flex;
 justify-content:center;
 align-items:center;
+flex-wrap:wrap;
+gap:10px;
+padding:10px;
+overflow-y:auto;
 }
 
 #videoContainer{
-width:80%;
-height:80%;
+width:40%;
+height:40%;
+min-width:300px;
+min-height:200px;
+flex: 1 1 auto;
 position:relative;
 display:flex;
 justify-content:center;
@@ -100,6 +107,27 @@ align-items:center;
 background:black;
 border-radius:12px;
 overflow:hidden;
+}
+
+.remoteVideoContainer {
+width:40%;
+height:40%;
+min-width:300px;
+min-height:200px;
+flex: 1 1 auto;
+position:relative;
+display:flex;
+justify-content:center;
+align-items:center;
+background:black;
+border-radius:12px;
+overflow:hidden;
+}
+
+.remoteVideoContainer video {
+width:100%;
+height:100%;
+object-fit:cover;
 }
 
 #backgroundLayer{
