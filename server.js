@@ -51,6 +51,14 @@ const ChatSchema = new mongoose.Schema({
 
 const Chat = mongoose.model("Chat", ChatSchema);
 
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: "user" }
+});
+const User = mongoose.model("User", UserSchema);
+
 const memoryMeetings = [];
 const memoryChats = [];
 
@@ -195,13 +203,6 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_SECRET || "YOUR_KEY_SECRET"
 });
 
-const usersFilePath = path.join(__dirname, "users.json");
-
-const defaultAuthUsers = [
-  { name: "Admin", email: "admin@test.com", password: "123456", role: "admin" },
-  { name: "User", email: "user@test.com", password: "123456", role: "user" }
-];
-
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
@@ -212,54 +213,6 @@ function sanitizeName(name) {
     .replace(/\s+/g, " ")
     .slice(0, 80);
 }
-
-function normalizeUserRecord(rawUser) {
-  const email = normalizeEmail(rawUser.email);
-  const password = String(rawUser.password || "").trim();
-
-  if (!email || !password) {
-    return null;
-  }
-
-  return {
-    name: sanitizeName(rawUser.name) || email,
-    email,
-    password,
-    role: rawUser.role || "user"
-  };
-}
-
-function saveAuthUsers(users) {
-  fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
-}
-
-function loadAuthUsers() {
-  try {
-    const raw = fs.readFileSync(usersFilePath, "utf8");
-    const parsed = JSON.parse(raw);
-
-    if (!Array.isArray(parsed)) {
-      saveAuthUsers(defaultAuthUsers);
-      return [...defaultAuthUsers];
-    }
-
-    const normalized = parsed
-      .map((item) => normalizeUserRecord(item))
-      .filter(Boolean);
-
-    if (normalized.length === 0) {
-      saveAuthUsers(defaultAuthUsers);
-      return [...defaultAuthUsers];
-    }
-
-    return normalized;
-  } catch (error) {
-    saveAuthUsers(defaultAuthUsers);
-    return [...defaultAuthUsers];
-  }
-}
-
-const authUsers = loadAuthUsers();
 
 /* ------------------ PLANS ------------------ */
 
@@ -540,7 +493,7 @@ app.post("/create-order", async (req, res) => {
 
 });
 
-app.post("/signup", (req, res) => {
+app.post("/signup", async (req, res) => {
 
   const name = sanitizeName(req.body?.name);
   const email = normalizeEmail(req.body?.email);
@@ -567,26 +520,44 @@ app.post("/signup", (req, res) => {
     });
   }
 
-  const exists = authUsers.some((user) => user.email === email);
-
-  if (exists) {
-    return res.status(409).json({
-      success: false,
-      message: "Email already registered"
-    });
-  }
-
-  const newUser = {
-    name,
-    email,
-    password,
-    role: "user"
-  };
-
-  authUsers.push(newUser);
-
   try {
-    saveAuthUsers(authUsers);
+    let exists = false;
+    if (isDbAvailable()) {
+      const userInDb = await User.findOne({ email });
+      exists = !!userInDb;
+    }
+
+    if (exists) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered"
+      });
+    }
+
+    const newUser = {
+      name,
+      email,
+      password,
+      role: "user"
+    };
+
+    if (isDbAvailable()) {
+      await User.create(newUser);
+    } else {
+      throw new Error("Database not available to save user");
+    }
+
+    req.session.user = {
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
+    };
+
+    return res.json({
+      success: true,
+      message: "Signup successful",
+      user: req.session.user
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -594,52 +565,51 @@ app.post("/signup", (req, res) => {
     });
   }
 
-  req.session.user = {
-    name: newUser.name,
-    email: newUser.email,
-    role: newUser.role
-  };
-
-  return res.json({
-    success: true,
-    message: "Signup successful",
-    user: req.session.user
-  });
-
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
 
   const { email, password } = req.body;
   const normalizedEmail = normalizeEmail(email);
   const normalizedPassword = String(password || "").trim();
 
-  const user = authUsers.find(
-    u => u.email === normalizedEmail && u.password === normalizedPassword
-  );
+  try {
+    let user = null;
+    if (isDbAvailable()) {
+      user = await User.findOne({ 
+        email: normalizedEmail, 
+        password: normalizedPassword 
+      }).lean();
+    }
 
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid email or password"
-    });
-  }
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
 
-  req.session.user = {
-    name: user.name,
-    email: user.email,
-    role: user.role
-  };
-
-  res.json({
-    success: true,
-    message: "Login successful",
-    user: {
+    req.session.user = {
       name: user.name,
       email: user.email,
       role: user.role
-    }
-  });
+    };
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during login"
+    });
+  }
 
 });
 
