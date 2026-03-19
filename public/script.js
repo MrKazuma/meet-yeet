@@ -12,6 +12,8 @@ const screenBtn = document.getElementById("screenBtn");
 const chatBox = document.getElementById("chatBox");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
+const participantsList = document.getElementById("participantsList");
+const participantsCount = document.getElementById("participantsCount");
 
 const videoIcon = document.getElementById("videoIcon");
 const micIcon = document.getElementById("micIcon");
@@ -21,6 +23,61 @@ const screenIcon = document.getElementById("screenIcon");
 const accountPanel = document.getElementById("accountPanel");
 const userNameDisplay = document.getElementById("userName");
 const nameInput = document.getElementById("nameInput");
+
+const participantsById = new Map();
+
+function getLoggedInName(){
+    try{
+        const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+        if (storedUser && storedUser.name) return storedUser.name;
+        return storedUser && storedUser.email ? storedUser.email : "";
+    }catch(error){
+        return "";
+    }
+}
+
+function getDisplayName(){
+    const savedName = localStorage.getItem("username");
+    const loggedInName = getLoggedInName();
+
+    if (savedName && savedName.trim()) {
+        return savedName.trim();
+    }
+
+    if (loggedInName) {
+        return loggedInName;
+    }
+
+    return "Guest";
+}
+
+function renderParticipants(){
+    if (!participantsList || !participantsCount) {
+        return;
+    }
+
+    participantsList.innerHTML = "";
+
+    const names = Array.from(participantsById.values()).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+
+    names.forEach((name) => {
+        const li = document.createElement("li");
+        li.innerText = name;
+        participantsList.appendChild(li);
+    });
+
+    participantsCount.innerText = "(" + names.length + ")";
+}
+
+function appendSystemMessage(message){
+    const div = document.createElement("div");
+    div.innerText = message;
+    div.style.color = "#9ea3a8";
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
 let localStream = null;
 let screenStream;
@@ -62,7 +119,8 @@ startMedia();
 
 /* ---------------- JOIN ROOM ---------------- */
 
-const userName = localStorage.getItem("username") || "Guest";
+const userName = getDisplayName();
+userNameDisplay.innerText = userName;
 
 socket.emit("join-room", {
     roomId: roomId,
@@ -184,6 +242,16 @@ function stopShare(){
     screenIcon.src = "/icons/screen-on.png";
 }
 
+/* ---------------- END MEETING ---------------- */
+const endMeetingBtn = document.getElementById("endMeetingBtn");
+if (endMeetingBtn) {
+    endMeetingBtn.onclick = () => {
+        if (confirm("Are you sure you want to end the meeting for everyone?")) {
+            socket.emit("end-meeting");
+        }
+    };
+}
+
 /* ---------------- BACKGROUND ---------------- */
 
 function changeBackground(type){
@@ -216,7 +284,10 @@ chatInput.addEventListener("keydown",e=>{
 
 socket.on("chat-message",(data)=>{
     const div=document.createElement("div");
-    div.innerText = data.user + " : " + data.message;
+    const nameSpan = document.createElement("strong");
+    nameSpan.innerText = (data.user || "Guest");
+    div.appendChild(nameSpan);
+    div.appendChild(document.createTextNode(": " + data.message));
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
 });
@@ -226,17 +297,75 @@ socket.on("chat-history",(messages)=>{
 
     messages.forEach((item)=>{
         const div=document.createElement("div");
-        div.innerText = item.user + " : " + item.message;
+        const nameSpan = document.createElement("strong");
+        nameSpan.innerText = (item.user || "Guest");
+        div.appendChild(nameSpan);
+        div.appendChild(document.createTextNode(": " + item.message));
         chatBox.appendChild(div);
     });
 
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
+socket.on("participants-snapshot", (participants)=>{
+    participantsById.clear();
+
+    (participants || []).forEach((participant)=>{
+        if (participant && participant.id) {
+            participantsById.set(participant.id, participant.name || "Guest");
+        }
+    });
+
+    renderParticipants();
+});
+
+socket.on("user-connected", (participant)=>{
+    if (participant && participant.id) {
+        participantsById.set(participant.id, participant.name || "Guest");
+        renderParticipants();
+
+        appendSystemMessage((participant.name || "Guest") + " joined the meeting");
+    }
+});
+
+socket.on("user-disconnected", (participant)=>{
+    if (!participant) {
+        return;
+    }
+
+    const participantId = typeof participant === "string" ? participant : participant.id;
+    const participantName = typeof participant === "string"
+        ? (participantsById.get(participantId) || "Guest")
+        : (participant.name || participantsById.get(participantId) || "Guest");
+
+    if (participantId) {
+        participantsById.delete(participantId);
+    }
+
+    renderParticipants();
+    appendSystemMessage(participantName + " left the meeting");
+});
+
+socket.on("user-renamed", (payload)=>{
+    if (!payload || !payload.id) {
+        return;
+    }
+
+    const oldName = payload.oldName || participantsById.get(payload.id) || "Guest";
+    const nextName = payload.name || "Guest";
+
+    participantsById.set(payload.id, nextName);
+    renderParticipants();
+
+    if (oldName !== nextName) {
+        appendSystemMessage(oldName + " is now known as " + nextName);
+    }
+});
+
 /* ---------------- MEETING END ---------------- */
 
-socket.on("meeting-ended",()=>{
-    alert("Meeting time has ended");
+socket.on("meeting-ended",(data)=>{
+    alert((data && data.message) ? data.message : "Meeting has ended.");
     window.location.href="/";
 });
 
@@ -295,9 +424,18 @@ function saveName(){
     const name = nameInput.value;
     if(!name.trim()) return;
 
-    localStorage.setItem("username", name);
-    userNameDisplay.innerText = name;
+    const sanitizedName = name.trim();
+
+    localStorage.setItem("username", sanitizedName);
+    userNameDisplay.innerText = sanitizedName;
     nameInput.value="";
+
+    if (socket.connected) {
+        socket.emit("update-user-name", {
+            roomId: roomId,
+            name: sanitizedName
+        });
+    }
 }
 
 function logout(){
@@ -308,6 +446,5 @@ function logout(){
 /* LOAD NAME */
 
 window.addEventListener("load",()=>{
-    const saved = localStorage.getItem("username");
-    if(saved) userNameDisplay.innerText = saved;
+    userNameDisplay.innerText = getDisplayName();
 });

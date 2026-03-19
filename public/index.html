@@ -200,6 +200,35 @@ border-bottom:1px solid #444;
 color:#ff7a00;
 }
 
+#participantsSection{
+padding:12px 15px;
+border-bottom:1px solid #444;
+}
+
+#participantsTitle{
+font-size:14px;
+font-weight:bold;
+margin-bottom:8px;
+}
+
+#participantsCount{
+color:#bbb;
+font-weight:normal;
+margin-left:6px;
+}
+
+#participantsList{
+margin:0;
+padding-left:18px;
+max-height:100px;
+overflow-y:auto;
+}
+
+#participantsList li{
+margin:4px 0;
+color:#ddd;
+}
+
 #chatBox{
 flex:1;
 overflow-y:auto;
@@ -292,6 +321,10 @@ background:#ff9a3c;
 <img id="screenIcon" src="/icons/screen-on.png">
 </button>
 
+<button id="endMeetingBtn" class="controlBtn" style="background-color: #ff4d4d; border-radius: 5px; color: white; padding: 10px; font-weight: bold;">
+End Meeting
+</button>
+
 </div>
 
 <div id="backgroundSelector">
@@ -304,6 +337,11 @@ background:#ff9a3c;
 <div id="chatPanel">
 
 <div id="chatHeader">Meeting Chat</div>
+
+<div id="participantsSection">
+<div id="participantsTitle">Participants <span id="participantsCount">(0)</span></div>
+<ul id="participantsList"></ul>
+</div>
 
 <div id="chatBox"></div>
 
@@ -325,7 +363,7 @@ background:#ff9a3c;
 const loggedUser = JSON.parse(localStorage.getItem("user"));
 
 if(loggedUser){
-document.getElementById("userName").innerText = loggedUser.email;
+document.getElementById("userName").innerText = loggedUser.name || loggedUser.email;
 }
 
 function logout(){

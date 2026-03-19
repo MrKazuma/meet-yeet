@@ -17,22 +17,43 @@ background:white;
 padding:30px;
 border-radius:10px;
 box-shadow:0 0 10px rgba(0,0,0,0.1);
+width: 250px;
 }
 
 input{
 display:block;
 margin:10px 0;
 padding:10px;
-width:200px;
+width:calc(100% - 22px);
 }
 
 button{
 padding:10px;
-width:220px;
+width:100%;
 background:#4CAF50;
 color:white;
 border:none;
 cursor:pointer;
+margin-top:10px;
+}
+
+.toggle {
+font-size: 14px;
+text-align: center;
+margin-top: 15px;
+color: #007bff;
+cursor: pointer;
+text-decoration: underline;
+}
+
+#msg {
+color: red;
+text-align: center;
+font-size: 14px;
+}
+
+#signupSection {
+display: none;
 }
 </style>
 </head>
@@ -41,12 +62,22 @@ cursor:pointer;
 
 <div class="box">
 
+<div id="loginSection">
 <h2>Login</h2>
-
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-
+<input id="loginEmail" placeholder="Email">
+<input id="loginPassword" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
+<div class="toggle" onclick="toggleView('signup')">Don't have an account? Sign up</div>
+</div>
+
+<div id="signupSection">
+<h2>Sign up</h2>
+<input id="signupName" placeholder="Name">
+<input id="signupEmail" placeholder="Email">
+<input id="signupPassword" type="password" placeholder="Password (min 6 chars)">
+<button onclick="signup()">Sign up</button>
+<div class="toggle" onclick="toggleView('login')">Already have an account? Login</div>
+</div>
 
 <p id="msg"></p>
 
@@ -65,10 +96,21 @@ return "/";
 return next;
 }
 
+function toggleView(view) {
+document.getElementById("msg").innerText = "";
+if(view === 'signup') {
+document.getElementById("loginSection").style.display = "none";
+document.getElementById("signupSection").style.display = "block";
+} else {
+document.getElementById("loginSection").style.display = "block";
+document.getElementById("signupSection").style.display = "none";
+}
+}
+
 async function login(){
 
-const email = document.getElementById("email").value;
-const password = document.getElementById("password").value;
+const email = document.getElementById("loginEmail").value;
+const password = document.getElementById("loginPassword").value;
 
 const res = await fetch("/login",{
 method:"POST",
@@ -81,15 +123,35 @@ body:JSON.stringify({email,password})
 const data = await res.json();
 
 if(data.success){
-
 localStorage.setItem("user",JSON.stringify(data.user));
-
 window.location.href=getNextPath();
-
 }else{
+document.getElementById("msg").innerText=data.message || "Login failed";
+}
 
-document.getElementById("msg").innerText="Login failed";
+}
 
+async function signup(){
+
+const name = document.getElementById("signupName").value;
+const email = document.getElementById("signupEmail").value;
+const password = document.getElementById("signupPassword").value;
+
+const res = await fetch("/signup",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({name,email,password})
+});
+
+const data = await res.json();
+
+if(data.success){
+localStorage.setItem("user",JSON.stringify(data.user));
+window.location.href=getNextPath();
+}else{
+document.getElementById("msg").innerText=data.message || "Signup failed";
 }
 
 }

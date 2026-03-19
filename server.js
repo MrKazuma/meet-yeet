@@ -3,6 +3,8 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const session = require("express-session");
+const fs = require("fs");
+const path = require("path");
 
 const mongoose = require("mongoose");
 const Razorpay = require("razorpay");
@@ -33,7 +35,8 @@ const MeetingSchema = new mongoose.Schema({
   meetingId: String,
   title: String,
   scheduledFor: Date,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  ended: { type: Boolean, default: false }
 });
 
 const Meeting = mongoose.model("Meeting", MeetingSchema);
@@ -80,7 +83,8 @@ async function createMeetingRecord(payload) {
     meetingId: payload.meetingId,
     title: payload.title || null,
     scheduledFor: payload.scheduledFor || null,
-    createdAt: new Date()
+    createdAt: new Date(),
+    ended: false
   };
 
   memoryMeetings.push(record);
@@ -149,6 +153,21 @@ async function startMeetingNow(meetingId) {
   return meeting;
 }
 
+async function markMeetingAsEnded(meetingId) {
+  if (isDbAvailable()) {
+    const meeting = await Meeting.findOne({ meetingId });
+    if (meeting) {
+      meeting.ended = true;
+      await meeting.save();
+    }
+  } else {
+    const meeting = memoryMeetings.find((item) => item.meetingId === meetingId);
+    if (meeting) {
+      meeting.ended = true;
+    }
+  }
+}
+
 app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || "vclust-hardcoded-auth-secret",
@@ -166,6 +185,7 @@ app.use(express.static("public", { index: false }));
 
 const meetings = {};
 const connectedUsers = {}; // socket.id -> { id, name, plan }
+const roomParticipants = {}; // roomId -> { socketId: displayName }
 
 /* ------------------ RAZORPAY SETUP ------------------ */
 
@@ -174,10 +194,71 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_SECRET || "YOUR_KEY_SECRET"
 });
 
-const authUsers = [
-  { email: "admin@test.com", password: "123456", role: "admin" },
-  { email: "user@test.com", password: "123456", role: "user" }
+const usersFilePath = path.join(__dirname, "users.json");
+
+const defaultAuthUsers = [
+  { name: "Admin", email: "admin@test.com", password: "123456", role: "admin" },
+  { name: "User", email: "user@test.com", password: "123456", role: "user" }
 ];
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function sanitizeName(name) {
+  return String(name || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 80);
+}
+
+function normalizeUserRecord(rawUser) {
+  const email = normalizeEmail(rawUser.email);
+  const password = String(rawUser.password || "").trim();
+
+  if (!email || !password) {
+    return null;
+  }
+
+  return {
+    name: sanitizeName(rawUser.name) || email,
+    email,
+    password,
+    role: rawUser.role || "user"
+  };
+}
+
+function saveAuthUsers(users) {
+  fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
+}
+
+function loadAuthUsers() {
+  try {
+    const raw = fs.readFileSync(usersFilePath, "utf8");
+    const parsed = JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) {
+      saveAuthUsers(defaultAuthUsers);
+      return [...defaultAuthUsers];
+    }
+
+    const normalized = parsed
+      .map((item) => normalizeUserRecord(item))
+      .filter(Boolean);
+
+    if (normalized.length === 0) {
+      saveAuthUsers(defaultAuthUsers);
+      return [...defaultAuthUsers];
+    }
+
+    return normalized;
+  } catch (error) {
+    saveAuthUsers(defaultAuthUsers);
+    return [...defaultAuthUsers];
+  }
+}
+
+const authUsers = loadAuthUsers();
 
 /* ------------------ PLANS ------------------ */
 
@@ -255,6 +336,11 @@ io.on("connection", socket => {
         return;
       }
 
+      if (meetingRecord.ended) {
+        socket.emit("meeting-ended", { roomId });
+        return;
+      }
+
       // Restrict early joins for scheduled meetings.
       if (meetingRecord.scheduledFor) {
         const scheduledTime = new Date(meetingRecord.scheduledFor).getTime();
@@ -282,6 +368,19 @@ io.on("connection", socket => {
 
       socket.join(roomId);
 
+      if (!roomParticipants[roomId]) {
+        roomParticipants[roomId] = {};
+      }
+
+      roomParticipants[roomId][socket.id] = currentUser.name;
+
+      const participants = Object.entries(roomParticipants[roomId]).map(([id, name]) => ({
+        id,
+        name
+      }));
+
+      socket.emit("participants-snapshot", participants);
+
       socket.to(roomId).emit("user-connected", {
         id: socket.id,
         name: currentUser.name
@@ -297,7 +396,20 @@ io.on("connection", socket => {
     /* -------- DISCONNECT -------- */
 
     socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-disconnected", socket.id);
+      const participantName = roomParticipants[roomId]?.[socket.id] || currentUser.name || "Guest";
+
+      if (roomParticipants[roomId]) {
+        delete roomParticipants[roomId][socket.id];
+
+        if (Object.keys(roomParticipants[roomId]).length === 0) {
+          delete roomParticipants[roomId];
+        }
+      }
+
+      socket.to(roomId).emit("user-disconnected", {
+        id: socket.id,
+        name: participantName
+      });
       delete connectedUsers[socket.id];
     });
 
@@ -324,6 +436,43 @@ io.on("connection", socket => {
         message: data.message
       });
 
+    });
+
+    socket.on("update-user-name", (data) => {
+      const nextName = String(data?.name || "").trim();
+
+      if (!nextName || nextName.length > 80) {
+        return;
+      }
+
+      const previousName = currentUser.name || "Guest";
+      currentUser.name = nextName;
+
+      if (connectedUsers[socket.id]) {
+        connectedUsers[socket.id].name = nextName;
+      }
+
+      if (!roomParticipants[roomId]) {
+        roomParticipants[roomId] = {};
+      }
+
+      roomParticipants[roomId][socket.id] = nextName;
+
+      io.to(roomId).emit("user-renamed", {
+        id: socket.id,
+        oldName: previousName,
+        name: nextName
+      });
+    });
+
+    socket.on("end-meeting", async () => {
+      await markMeetingAsEnded(roomId);
+      io.to(roomId).emit("meeting-ended", { message: "The meeting has been ended." });
+
+      // Clean up in-memory meeting timer
+      if (meetings[roomId]) {
+        delete meetings[roomId];
+      }
     });
 
   });
@@ -390,12 +539,82 @@ app.post("/create-order", async (req, res) => {
 
 });
 
+app.post("/signup", (req, res) => {
+
+  const name = sanitizeName(req.body?.name);
+  const email = normalizeEmail(req.body?.email);
+  const password = String(req.body?.password || "").trim();
+
+  if (!name) {
+    return res.status(400).json({
+      success: false,
+      message: "Name is required"
+    });
+  }
+
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter a valid email"
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 6 characters"
+    });
+  }
+
+  const exists = authUsers.some((user) => user.email === email);
+
+  if (exists) {
+    return res.status(409).json({
+      success: false,
+      message: "Email already registered"
+    });
+  }
+
+  const newUser = {
+    name,
+    email,
+    password,
+    role: "user"
+  };
+
+  authUsers.push(newUser);
+
+  try {
+    saveAuthUsers(authUsers);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Unable to save user"
+    });
+  }
+
+  req.session.user = {
+    name: newUser.name,
+    email: newUser.email,
+    role: newUser.role
+  };
+
+  return res.json({
+    success: true,
+    message: "Signup successful",
+    user: req.session.user
+  });
+
+});
+
 app.post("/login", (req, res) => {
 
   const { email, password } = req.body;
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPassword = String(password || "").trim();
 
   const user = authUsers.find(
-    u => u.email === email && u.password === password
+    u => u.email === normalizedEmail && u.password === normalizedPassword
   );
 
   if (!user) {
@@ -406,6 +625,7 @@ app.post("/login", (req, res) => {
   }
 
   req.session.user = {
+    name: user.name,
     email: user.email,
     role: user.role
   };
@@ -414,6 +634,7 @@ app.post("/login", (req, res) => {
     success: true,
     message: "Login successful",
     user: {
+      name: user.name,
       email: user.email,
       role: user.role
     }
@@ -573,6 +794,10 @@ const meeting = await findMeetingById(req.params.id);
 
 if(!meeting){
 return res.status(404).send("Meeting not found");
+}
+
+if(meeting.ended){
+return res.status(403).send("This meeting has already ended");
 }
 
 res.sendFile(__dirname + "/public/index.html");
