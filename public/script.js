@@ -191,9 +191,9 @@ function changeBackground(type){
     const bg = document.getElementById("backgroundLayer");
 
     if(type==="none") bg.style.backgroundImage="none";
-    if(type==="bg1") bg.style.backgroundImage="url('backgrounds/office.jpeg')";
-    if(type==="bg2") bg.style.backgroundImage="url('backgrounds/nature.jpg')";
-    if(type==="bg3") bg.style.backgroundImage="url('backgrounds/abstract.jpg')";
+    if(type==="bg1") bg.style.backgroundImage="url('/backgrounds/office.jpeg')";
+    if(type==="bg2") bg.style.backgroundImage="url('/backgrounds/nature.jpg')";
+    if(type==="bg3") bg.style.backgroundImage="url('/backgrounds/abstract.jpg')";
 }
 
 /* ---------------- CHAT ---------------- */
