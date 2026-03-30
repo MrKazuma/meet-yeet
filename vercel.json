@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/:match*", "destination": "https://meet-yeet-1.onrender.com/:match*" },
     { "source": "/", "destination": "/client/home.html" },
     { "source": "/home", "destination": "/client/home.html" },
     { "source": "/login", "destination": "/client/login.html" },
