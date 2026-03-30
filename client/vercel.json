@@ -2,8 +2,7 @@
   "routes": [
     { "handle": "filesystem" },
 
-    { "src": "^/$", "dest": "/index.html" },
-    { "src": "^/home$", "dest": "/home.html" },
+    { "src": "^/$", "dest": "/home.html" },
     { "src": "^/login$", "dest": "/login.html" },
     { "src": "^/schedule$", "dest": "/schedule.html" },
     { "src": "^/room/(.*)", "dest": "/room.html" }
