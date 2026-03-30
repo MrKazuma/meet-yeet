@@ -85,7 +85,7 @@ position:absolute;
 top:0;
 left:0;
 right:320px;
-bottom:90px;
+bottom:120px;
 display:flex;
 justify-content:center;
 align-items:center;
@@ -96,11 +96,10 @@ overflow-y:auto;
 }
 
 #videoContainer{
-width:40%;
-height:40%;
 min-width:300px;
 min-height:200px;
-flex: 1 1 auto;
+max-height:100%;
+flex: 1 1 300px;
 position:relative;
 display:flex;
 justify-content:center;
@@ -111,11 +110,10 @@ overflow:hidden;
 }
 
 .remoteVideoContainer {
-width:40%;
-height:40%;
 min-width:300px;
 min-height:200px;
-flex: 1 1 auto;
+max-height:100%;
+flex: 1 1 300px;
 position:relative;
 display:flex;
 justify-content:center;
@@ -131,6 +129,11 @@ height:100%;
 object-fit:cover;
 }
 
+#videoContainer.sharing, .remoteVideoContainer.sharing {
+max-height: 100% !important;
+flex: 1 1 100% !important;
+}
+
 #backgroundLayer{
 position:absolute;
 width:100%;
@@ -143,8 +146,9 @@ z-index:0;
 video{
 position:relative;
 z-index:1;
-max-width:100%;
-max-height:100%;
+width:100%;
+height:100%;
+object-fit:cover;
 }
 
 /* CONTROL BAR */
@@ -160,6 +164,7 @@ border-radius:50px;
 display:flex;
 gap:20px;
 box-shadow:0 10px 30px rgba(0,0,0,0.5);
+z-index: 9999;
 }
 
 .controlBtn{
@@ -179,33 +184,148 @@ transition:0.2s;
 background:#ff7a00;
 }
 
-.controlBtn img{
-width:30px;
-height:30px;
+.controlBtn svg{
+width:24px;
+height:24px;
 }
 
-/* BACKGROUND SELECTOR */
-
-#backgroundSelector{
-position:absolute;
-bottom:110px;
-left:50%;
-transform:translateX(-50%);
-display:flex;
-gap:10px;
+/* TOOLTIPS */
+[data-tooltip] {
+  position: relative;
 }
 
-#backgroundSelector button{
-background:#ff7a00;
-border:none;
-color:white;
-padding:6px 12px;
-border-radius:6px;
-cursor:pointer;
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%; /* Place directly above the button */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 100;
 }
 
-#backgroundSelector button:hover{
-background:#ff9a3c;
+[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+#endMeetingBtn {
+background-color: #e63946;
+border: none;
+border-radius: 30px;
+color: white;
+padding: 0 24px;
+font-weight: bold;
+cursor: pointer;
+transition: 0.2s;
+height: 60px;
+font-size: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+#endMeetingBtn:hover {
+background-color: #d62828;
+}
+
+/* BACKGROUND DROPDOWN */
+
+.cam-options {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  border: 1px solid #444;
+  min-width: 140px;
+  z-index: 9999;
+}
+
+.cam-options.show {
+  display: flex !important;
+}
+
+.split-btn {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  background: #3a3a3a;
+  border-radius: 30px;
+}
+.split-btn-main {
+  background: transparent;
+  border: none;
+  border-radius: 30px 0 0 30px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.split-btn-main:hover, .split-btn-drop:hover {
+  background: #ff7a00;
+}
+.split-btn-main svg {
+  width: 24px;
+  height: 24px;
+}
+.split-btn-drop {
+  background: transparent;
+  border: none;
+  border-left: 1px solid #555;
+  border-radius: 0 30px 30px 0;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+@media (max-width: 850px) {
+  .split-btn-main {
+    width: 45px;
+    height: 45px;
+  }
+  .split-btn-main svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.cam-options button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.2s;
+}
+
+.cam-options button:hover {
+  background: #ff7a00;
 }
 
 /* CHAT PANEL */
@@ -319,8 +439,9 @@ background:#ff9a3c;
   }
   
   #videoContainer, .remoteVideoContainer {
-    width: 48%; 
+    flex: 1 1 150px;
     height: auto;
+    max-height: 100%;
     min-width: 150px;
     min-height: 150px;
   }
@@ -377,9 +498,15 @@ background:#ff9a3c;
     height: 45px;
   }
 
-  .controlBtn img {
-    width: 22px;
-    height: 22px;
+  .controlBtn svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  #endMeetingBtn {
+    height: 45px;
+    padding: 0 15px;
+    font-size: 14px;
   }
   
   #chatToggleBtnMobile {
@@ -436,36 +563,47 @@ VClust Meeting
 
 <div id="controls">
 
-<button id="videoBtn" class="controlBtn">
-<img id="videoIcon" src="/icons/camera-on.jpg">
+<div class="split-btn">
+<button id="videoBtn" class="split-btn-main" data-tooltip="Toggle Camera" onclick="toggleVideo()">
+  <span id="camIcon" style="display:flex; align-items:center; justify-content:center; color:white;">
+    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+  </span>
+</button>
+<button id="camOptionsBtn" class="split-btn-drop" data-tooltip="Camera Options" onclick="toggleCameraOptions(event)">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+</button>
+<div id="camOptions" class="cam-options" style="bottom: calc(100% + 15px); left: 50%; transform: translateX(-50%);">
+  <div style="padding: 4px 8px; font-size: 12px; color: #aaa;">Background</div>
+  <button onclick="changeBackground('none')">None</button>
+  <button onclick="changeBackground('blur')">Blur</button>
+</div>
+</div>
+
+<button id="micBtn" class="controlBtn" data-tooltip="Toggle Microphone">
+  <span id="micIcon" style="display:flex; align-items:center; justify-content:center; color:white;">
+    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+  </span>
 </button>
 
-<button id="micBtn" class="controlBtn">
-<img id="micIcon" src="/icons/mic-on.jpg">
+<button id="screenBtn" class="controlBtn" data-tooltip="Share Screen">
+  <span id="screenIcon" style="display:flex; align-items:center; justify-content:center; color:white;">
+    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+  </span>
 </button>
 
-<button id="screenBtn" class="controlBtn">
-<img id="screenIcon" src="/icons/screen-on.png">
-</button>
-
-<button id="chatToggleBtnMobile" class="controlBtn" style="display: none;" onclick="toggleMobileChat()">
+<button id="chatToggleBtnMobile" class="controlBtn" style="display: none;" onclick="toggleMobileChat()" data-tooltip="Open Chat">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
 </svg>
 </button>
 
-<button id="endMeetingBtn" class="controlBtn" style="background-color: #ff4d4d; border-radius: 5px; color: white; padding: 10px; font-weight: bold;">
+<button id="endMeetingBtn" data-tooltip="Leave Call">
 End Meeting
 </button>
 
 </div>
 
-<div id="backgroundSelector">
-<button onclick="changeBackground('none')">None</button>
-<button onclick="changeBackground('bg1')">Office</button>
-<button onclick="changeBackground('bg2')">Nature</button>
-<button onclick="changeBackground('bg3')">Abstract</button>
-</div>
+
 
 <div id="chatPanel">
 

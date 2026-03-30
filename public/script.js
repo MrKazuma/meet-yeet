@@ -1,3 +1,10 @@
+const ICON_CAM_ON = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+const ICON_CAM_OFF = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"></path></svg>`;
+const ICON_MIC_ON = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+const ICON_SCREEN_ON = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
+const ICON_SCREEN_OFF = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
 const socket = io();
 
 const pathParts = window.location.pathname.split("/").filter(Boolean);
@@ -15,7 +22,7 @@ const sendBtn = document.getElementById("sendBtn");
 const participantsList = document.getElementById("participantsList");
 const participantsCount = document.getElementById("participantsCount");
 
-const videoIcon = document.getElementById("videoIcon");
+const videoIcon = document.getElementById("camIcon") || document.getElementById("videoIcon");
 const micIcon = document.getElementById("micIcon");
 const screenIcon = document.getElementById("screenIcon");
 
@@ -123,8 +130,8 @@ async function startMedia(){
         video.srcObject = localStream;
         videoEnabled = false;
         micEnabled = false;
-        videoIcon.src = "/icons/camera-off.jpg";
-        micIcon.src = "/icons/mic-off.jpg";
+        if(videoIcon) videoIcon.innerHTML = ICON_CAM_OFF;
+        if(micIcon) micIcon.innerHTML = ICON_MIC_OFF;
     }
 }
 
@@ -166,7 +173,7 @@ async function startCamera(){
 
         video.srcObject = localStream;
         videoEnabled = true;
-        videoIcon.src = "/icons/camera-on.jpg";
+        videoIcon.innerHTML = ICON_CAM_ON;
     }catch(error){
         console.error("startCamera error:", error);
         alert("Unable to start camera. Check browser permissions.");
@@ -182,16 +189,16 @@ function stopCamera(){
     });
 
     videoEnabled = false;
-    videoIcon.src = "/icons/camera-off.jpg";
+    videoIcon.innerHTML = ICON_CAM_OFF;
 }
 
-videoBtn.onclick = ()=>{
+function toggleVideo() {
     if (screenSharing) {
         alert("Camera disabled while screen sharing.");
         return;
     }
     videoEnabled ? stopCamera() : startCamera();
-};
+}
 
 /* ---------------- MIC ---------------- */
 
@@ -201,7 +208,7 @@ function stopMic(){
         track.enabled = false;
     });
     micEnabled = false;
-    micIcon.src = "/icons/mic-off.jpg";
+    micIcon.innerHTML = ICON_MIC_OFF;
 }
 
 async function startMic(){
@@ -227,7 +234,7 @@ async function startMic(){
         }
 
         micEnabled = true;
-        micIcon.src = "/icons/mic-on.jpg";
+        micIcon.innerHTML = ICON_MIC_ON;
     }catch(error){
         console.error("startMic error:", error);
         alert("Unable to start microphone. Check browser permissions.");
@@ -253,7 +260,9 @@ screenBtn.onclick = async ()=>{
         video.srcObject = screenStream;
 
         screenSharing = true;
-        screenIcon.src = "/icons/screen-off.png";
+        screenIcon.innerHTML = ICON_SCREEN_OFF;
+        document.getElementById("videoContainer").classList.add("sharing");
+        video.style.objectFit = "contain";
 
         const screenTrack = screenStream.getVideoTracks()[0];
         if (typeof peers !== 'undefined') {
@@ -281,7 +290,9 @@ function stopShare(){
     video.srcObject = localStream;
 
     screenSharing = false;
-    screenIcon.src = "/icons/screen-on.png";
+    screenIcon.innerHTML = ICON_SCREEN_ON;
+    document.getElementById("videoContainer").classList.remove("sharing");
+    video.style.objectFit = "cover";
 
     if (localStream && typeof peers !== 'undefined') {
         const videoTrack = localStream.getVideoTracks()[0];
@@ -311,10 +322,12 @@ function changeBackground(type){
 
     const bg = document.getElementById("backgroundLayer");
 
-    if(type==="none") bg.style.backgroundImage="none";
-    if(type==="bg1") bg.style.backgroundImage="url('/backgrounds/office.jpeg')";
-    if(type==="bg2") bg.style.backgroundImage="url('/backgrounds/nature.jpg')";
-    if(type==="bg3") bg.style.backgroundImage="url('/backgrounds/abstract.jpg')";
+    if(type==="none") {
+        bg.style.backdropFilter = "none";
+    }
+    if(type==="blur") {
+        bg.style.backdropFilter = "blur(10px)";
+    }
 }
 
 /* ---------------- CHAT ---------------- */
@@ -642,3 +655,21 @@ socket.on("webrtc-ice-candidate", async (data) => {
     }
 });
 
+window.toggleCameraOptions = function(event) { 
+    if(event) event.stopPropagation();
+    document.getElementById('camOptions').classList.toggle('show'); 
+}
+
+// Close camera options when clicking outside
+document.addEventListener('click', (event) => {
+    const camOptions = document.getElementById('camOptions');
+    const videoBtn = document.getElementById('videoBtn');
+    
+    if (camOptions && camOptions.classList.contains('show')) {
+        // If click is outside both the button and the options menu
+        const camBtn = document.getElementById('camOptionsBtn');
+        if (!camOptions.contains(event.target) && (!videoBtn || !videoBtn.contains(event.target)) && (!camBtn || !camBtn.contains(event.target))) {
+            camOptions.classList.remove('show');
+        }
+    }
+});
