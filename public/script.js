@@ -473,7 +473,7 @@ document.getElementById("upgradeBtn").onclick = async ()=>{
         amount: order.amount,
         currency: order.currency,
         order_id: order.id,
-        name: "VClust",
+        name: "Meet & Yeet © 2026",
         description: "Pro Plan",
         handler: function (response){
             alert("Payment Successful!");
