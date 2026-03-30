@@ -60,6 +60,7 @@ const User = mongoose.model("User", UserSchema);
 
 const memoryMeetings = [];
 const memoryChats = [];
+const memoryUsers = [];
 
 function isDbAvailable() {
   return mongoose.connection.readyState === 1;
@@ -514,6 +515,8 @@ app.post("/signup", async (req, res) => {
     if (isDbAvailable()) {
       const userInDb = await User.findOne({ email });
       exists = !!userInDb;
+    } else {
+      exists = memoryUsers.some(u => u.email === email);
     }
 
     if (exists) {
@@ -533,7 +536,7 @@ app.post("/signup", async (req, res) => {
     if (isDbAvailable()) {
       await User.create(newUser);
     } else {
-      throw new Error("Database not available to save user");
+      memoryUsers.push(newUser);
     }
 
     req.session.user = {
@@ -569,6 +572,8 @@ app.post("/login", async (req, res) => {
         email: normalizedEmail, 
         password: normalizedPassword 
       }).lean();
+    } else {
+      user = memoryUsers.find(u => u.email === normalizedEmail && u.password === normalizedPassword);
     }
 
     if (!user) {
