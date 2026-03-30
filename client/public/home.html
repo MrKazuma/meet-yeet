@@ -268,7 +268,7 @@ return;
 }
 
 const nextPath = encodeURIComponent(window.location.pathname || "/");
-window.location = "/login.html?next=" + nextPath;
+window.location = "/login?next=" + nextPath;
 }
 
 function goToSchedule(){
@@ -340,7 +340,7 @@ async function createMeeting(){
 
 if(!isLoggedIn){
 const nextPath = encodeURIComponent(window.location.pathname || "/");
-window.location = "/login.html?next=" + nextPath;
+window.location = "/login?next=" + nextPath;
 return;
 }
 
@@ -354,7 +354,7 @@ const data = await res.json();
 
 if(res.status === 401){
 const nextPath = encodeURIComponent(window.location.pathname || "/");
-window.location = "/login.html?next=" + nextPath;
+window.location = "/login?next=" + nextPath;
 return;
 }
 
