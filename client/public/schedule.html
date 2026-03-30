@@ -111,13 +111,15 @@ background:#4aaeff;
 </div>
 
 <script>
+const API_URL = "https://meet-and-yeet-1.onrender.com";
+
 
 async function schedule(){
 
 const title=document.getElementById("title").value;
 const time=document.getElementById("time").value;
 
-const res=await fetch("/schedule-meeting",{
+const res=await fetch(`${API_URL}/schedule-meeting`,{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({title,time})
@@ -146,7 +148,7 @@ async function loadAllMeetings(){
 const list=document.getElementById("allMeetings");
 
 try{
-const res=await fetch("/scheduled-meetings");
+const res=await fetch(`${API_URL}/scheduled-meetings`);
 const data=await res.json();
 
 if(!data.success || !data.meetings.length){
@@ -172,7 +174,7 @@ list.innerHTML="<li>Unable to load meetings.</li>";
 async function startNow(meetingId){
 
 try{
-const res = await fetch(`/start-meeting/${meetingId}`,{
+const res = await fetch(`${API_URL}/start-meeting/${meetingId}`,{
 method:"POST"
 });
 

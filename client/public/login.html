@@ -108,6 +108,8 @@ display: none;
 </div>
 
 <script>
+const API_URL = "https://meet-and-yeet-1.onrender.com";
+
 
 function getNextPath(){
 const params = new URLSearchParams(window.location.search);
@@ -166,7 +168,7 @@ async function login(){
 const email = document.getElementById("loginEmail").value;
 const password = document.getElementById("loginPassword").value;
 
-const res = await fetch("/login",{
+const res = await fetch(`${API_URL}/login`,{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
@@ -191,7 +193,7 @@ const name = document.getElementById("signupName").value;
 const email = document.getElementById("signupEmail").value;
 const password = document.getElementById("signupPassword").value;
 
-const res = await fetch("/signup",{
+const res = await fetch(`${API_URL}/signup`,{
 method:"POST",
 headers:{
 "Content-Type":"application/json"

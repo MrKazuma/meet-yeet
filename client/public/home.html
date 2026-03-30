@@ -232,6 +232,8 @@ Join
 </div>
 
 <script>
+const API_URL = "https://meet-and-yeet-1.onrender.com";
+
 
 let isLoggedIn = false;
 
@@ -241,7 +243,7 @@ const profileName = document.getElementById("profileName");
 const profileContainer = document.getElementById("profileContainer");
 
 try{
-const res = await fetch("/me", { credentials: "same-origin" });
+const res = await fetch(`${API_URL}/me`, { credentials: "same-origin" });
 const data = await res.json();
 
 isLoggedIn = Boolean(res.ok && data.success);
@@ -275,7 +277,7 @@ window.location = "/schedule";
 
 async function logout(){
 try{
-await fetch("/logout", {
+await fetch(`${API_URL}/logout`, {
 method: "POST",
 credentials: "same-origin"
 });
@@ -309,7 +311,7 @@ async function loadScheduledMeetings(){
 const list=document.getElementById("upcomingList");
 
 try{
-const res=await fetch("/scheduled-meetings");
+const res=await fetch(`${API_URL}/scheduled-meetings`);
 const data=await res.json();
 
 if(!data.success || !data.meetings.length){
@@ -343,7 +345,7 @@ return;
 }
 
 try{
-const res = await fetch("/create-meeting",{
+const res = await fetch(`${API_URL}/create-meeting`,{
 method:"POST",
 credentials:"same-origin"
 });

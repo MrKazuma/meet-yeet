@@ -5,7 +5,8 @@ const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="cu
 const ICON_SCREEN_ON = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
 const ICON_SCREEN_OFF = `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-const socket = io();
+const API_URL = "https://meet-and-yeet-1.onrender.com";
+const socket = io(API_URL);
 
 const pathParts = window.location.pathname.split("/").filter(Boolean);
 const roomId = pathParts[0] === "room" && pathParts[1] ? pathParts[1] : "meeting1";
