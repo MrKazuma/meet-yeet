@@ -7,14 +7,6 @@
 <link rel="icon" type="image/png" href="/icons/favicon.png">
 
 <script>
-const API_URL = (() => {
-const host = window.location.hostname;
-if(host === "localhost" || host === "127.0.0.1"){
-return "";
-}
-return "https://meet-yeet-1.onrender.com";
-})();
-
 const user = localStorage.getItem("user");
 if(!user){
   window.location.href="/login";
