@@ -2,12 +2,56 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
-const io = require("socket.io")(http);
 const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
 
 const mongoose = require("mongoose");
+
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://meet-yeet.vercel.app";
+const ALLOWED_ORIGINS = FRONTEND_ORIGIN
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  if (/^https:\/\/.*\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  if (origin === "https://meet-yeet-1.onrender.com") {
+    return true;
+  }
+
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    return true;
+  }
+
+  return false;
+}
+
+const io = require("socket.io")(http, {
+  cors: {
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Origin not allowed by Socket.IO CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST"]
+  }
+});
 
 const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/meet-yeet";
 
@@ -178,18 +222,38 @@ async function markMeetingAsEnded(meetingId) {
 }
 
 app.use(express.json());
+app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (isAllowedOrigin(origin)) {
+    res.header("Access-Control-Allow-Origin", origin || "*");
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  }
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
 app.use(session({
   secret: process.env.SESSION_SECRET || "fallback-secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
-app.use(express.static(path.join(__dirname, "../client/public"), { index: false }));
-app.use(express.static(path.join(__dirname, "../client"), { index: false }));
+const clientDir = path.join(__dirname, "../client");
+app.use(express.static(clientDir, { index: false }));
 
 /* ------------------ IN-MEMORY DATA ------------------ */
 
@@ -742,12 +806,20 @@ app.get("/scheduled-meetings", async (req, res) => {
 
 
 app.get("/", (req,res)=>{
-res.sendFile(path.join(__dirname, "../client/public/home.html"));
+res.sendFile(path.join(clientDir, "home.html"));
+});
+
+app.get("/home", (req,res)=>{
+res.sendFile(path.join(clientDir, "home.html"));
+});
+
+app.get("/login", (req,res)=>{
+res.sendFile(path.join(clientDir, "login.html"));
 });
 
 app.get("/schedule", (req,res)=>{
 requireAuth(req, res, () => {
-res.sendFile(path.join(__dirname, "../client/public/schedule.html"));
+res.sendFile(path.join(clientDir, "schedule.html"));
 });
 });
 
@@ -765,7 +837,7 @@ if(meeting.ended){
 return res.status(403).send("This meeting has already ended");
 }
 
-res.sendFile(path.join(__dirname, "../client/public/index.html"));
+res.sendFile(path.join(clientDir, "index.html"));
 } catch (error) {
   return res.status(500).send("Unable to open meeting");
 }

@@ -108,7 +108,13 @@ display: none;
 </div>
 
 <script>
-const API_URL = "";
+const API_URL = (() => {
+const host = window.location.hostname;
+if(host === "localhost" || host === "127.0.0.1"){
+return "";
+}
+return "https://meet-yeet-1.onrender.com";
+})();
 
 
 function getNextPath(){
@@ -170,6 +176,7 @@ const password = document.getElementById("loginPassword").value;
 
 const res = await fetch(`${API_URL}/login`,{
 method:"POST",
+credentials:"include",
 headers:{
 "Content-Type":"application/json"
 },
@@ -195,6 +202,7 @@ const password = document.getElementById("signupPassword").value;
 
 const res = await fetch(`${API_URL}/signup`,{
 method:"POST",
+credentials:"include",
 headers:{
 "Content-Type":"application/json"
 },

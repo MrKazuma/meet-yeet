@@ -111,7 +111,13 @@ background:#4aaeff;
 </div>
 
 <script>
-const API_URL = "";
+const API_URL = (() => {
+const host = window.location.hostname;
+if(host === "localhost" || host === "127.0.0.1"){
+return "";
+}
+return "https://meet-yeet-1.onrender.com";
+})();
 
 
 async function schedule(){
@@ -121,6 +127,7 @@ const time=document.getElementById("time").value;
 
 const res=await fetch(`${API_URL}/schedule-meeting`,{
 method:"POST",
+credentials:"include",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({title,time})
 });
@@ -148,7 +155,7 @@ async function loadAllMeetings(){
 const list=document.getElementById("allMeetings");
 
 try{
-const res=await fetch(`${API_URL}/scheduled-meetings`);
+const res=await fetch(`${API_URL}/scheduled-meetings`, { credentials:"include" });
 const data=await res.json();
 
 if(!data.success || !data.meetings.length){
@@ -175,7 +182,8 @@ async function startNow(meetingId){
 
 try{
 const res = await fetch(`${API_URL}/start-meeting/${meetingId}`,{
-method:"POST"
+method:"POST",
+credentials:"include"
 });
 
 const data = await res.json();

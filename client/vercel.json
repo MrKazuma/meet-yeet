@@ -5,6 +5,6 @@
     { "handle": "filesystem" },
     { "src": "^/login$", "dest": "/login.html" },
     { "src": "^/schedule$", "dest": "/schedule.html" },
-    { "src": "^/room/(.*)", "dest": "/room.html" }
+    { "src": "^/room/(.*)", "dest": "/index.html" }
   ]
 }

@@ -4,7 +4,7 @@
     { "source": "/home", "destination": "/client/home.html" },
     { "source": "/login", "destination": "/client/login.html" },
     { "source": "/schedule", "destination": "/client/schedule.html" },
-    { "source": "/room/:match*", "destination": "/client/room.html" },
+    { "source": "/room/:match*", "destination": "/client/index.html" },
     { "source": "/(.*)", "destination": "/client/$1" }
   ]
 }
