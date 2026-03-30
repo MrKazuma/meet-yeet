@@ -2,11 +2,13 @@
 <html>
 
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schedule Meeting</title>
+<link rel="icon" type="image/png" href="/icons/logo.png">
 <style>
 body{
 font-family:Arial, sans-serif;
-background:#111;
+background:#1a1a1a;
 color:white;
 margin:0;
 padding:40px 20px;
@@ -15,12 +17,13 @@ justify-content:center;
 }
 
 #card{
-width:520px;
-max-width:100%;
-background:#1c1c1c;
+width:90%;
+max-width:520px;
+background:#2a2a2a;
 padding:24px;
 border-radius:14px;
-box-shadow:0 10px 30px rgba(0,0,0,0.35);
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+box-sizing: border-box;
 }
 
 h2{
@@ -85,7 +88,10 @@ background:#4aaeff;
 
 <div id="card">
 
-<h2>Schedule Meeting</h2>
+<div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+  <img src="/icons/logo.png" height="40" alt="VClust Logo">
+  <h2 style="margin:0;">Schedule Meeting</h2>
+</div>
 
 <input id="title" placeholder="Meeting title">
 

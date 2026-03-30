@@ -129,13 +129,13 @@ async function saveRoomChat(payload) {
 
 async function listScheduledMeetings() {
   if (isDbAvailable()) {
-    return Meeting.find({ scheduledFor: { $ne: null } })
+    return Meeting.find({ scheduledFor: { $ne: null }, ended: { $ne: true } })
       .sort({ scheduledFor: 1 })
       .lean();
   }
 
   return memoryMeetings
-    .filter((item) => item.scheduledFor)
+    .filter((item) => item.scheduledFor && !item.ended)
     .sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
 }
 
@@ -507,7 +507,7 @@ app.post("/create-order", async (req, res) => {
       receipt: plan || "pro_plan"
     });
 
-    res.json(order);
+    res.json({ ...order, key: process.env.RAZORPAY_KEY || "YOUR_KEY_ID" });
 
   } catch (error) {
     res.status(500).json({ error: "Order creation failed" });

@@ -2,6 +2,7 @@
 <html>
 
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VClust</title>
 <link rel="icon" type="image/png" href="/icons/logo.png">
 
@@ -309,12 +310,110 @@ color:white;
 background:#ff9a3c;
 }
 
+/* RESPONSIVE LAYOUT */
+@media (max-width: 850px) {
+  #videoStage {
+    right: 0;
+    bottom: 150px;
+    padding: 5px;
+  }
+  
+  #videoContainer, .remoteVideoContainer {
+    width: 48%; 
+    height: auto;
+    min-width: 150px;
+    min-height: 150px;
+  }
+  
+  #chatPanel {
+    position: fixed;
+    top: auto;
+    bottom: -100%; /* hide it by default */
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 60vh;
+    border-left: none;
+    border-top: 2px solid #ff7a00;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    transition: bottom 0.3s ease-in-out;
+    z-index: 50;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+  }
+
+  #chatPanel.active {
+    bottom: 0;
+  }
+  
+  /* Close Chat Button wrapper */
+  #chatOpenerWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #closeChatBtnMobile {
+    display: block !important;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding-right: 15px;
+  }
+  
+  #controls {
+    width: 90%;
+    gap: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    justify-content: space-around;
+    bottom: 10px;
+  }
+  
+  .controlBtn {
+    width: 45px;
+    height: 45px;
+  }
+
+  .controlBtn img {
+    width: 22px;
+    height: 22px;
+  }
+  
+  #chatToggleBtnMobile {
+    display: flex !important;
+  }
+
+  #backgroundSelector {
+    bottom: 80px;
+    width: 90%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  #header {
+    font-size: 16px;
+    left: 10px;
+  }
+  #header img {
+    height: 24px;
+  }
+  #accountIcon {
+    right: 10px;
+  }
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="header">VClust Meeting</div>
+<div id="header" style="display:flex; align-items:center; gap:10px;">
+<img src="/icons/logo.png" height="30" alt="VClust Logo">
+VClust Meeting
+</div>
 
 <div id="accountIcon" onclick="toggleAccount()">
 <img src="/icons/logo.png" width="30">
@@ -349,6 +448,12 @@ background:#ff9a3c;
 <img id="screenIcon" src="/icons/screen-on.png">
 </button>
 
+<button id="chatToggleBtnMobile" class="controlBtn" style="display: none;" onclick="toggleMobileChat()">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+</svg>
+</button>
+
 <button id="endMeetingBtn" class="controlBtn" style="background-color: #ff4d4d; border-radius: 5px; color: white; padding: 10px; font-weight: bold;">
 End Meeting
 </button>
@@ -364,7 +469,10 @@ End Meeting
 
 <div id="chatPanel">
 
-<div id="chatHeader">Meeting Chat</div>
+<div id="chatOpenerWrapper" style="border-bottom:1px solid #444;">
+  <div id="chatHeader" style="border-bottom:none;">Meeting Chat</div>
+  <button id="closeChatBtnMobile" style="display: none;" onclick="toggleMobileChat()">&#10005;</button>
+</div>
 
 <div id="participantsSection">
 <div id="participantsTitle">Participants <span id="participantsCount">(0)</span></div>
@@ -397,6 +505,11 @@ document.getElementById("userName").innerText = loggedUser.name || loggedUser.em
 function logout(){
 localStorage.removeItem("user");
 window.location.href="/login.html";
+}
+
+function toggleMobileChat() {
+  const panel = document.getElementById("chatPanel");
+  panel.classList.toggle("active");
 }
 
 </script>

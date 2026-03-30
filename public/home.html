@@ -2,14 +2,16 @@
 <html>
 
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VClust</title>
+<link rel="icon" type="image/png" href="/icons/logo.png">
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
-background:#111;
+font-family:Arial, sans-serif;
+background:#1a1a1a;
 color:white;
 }
 
@@ -20,7 +22,8 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 padding:20px 40px;
-background:#1a1a1a;
+background:#2a2a2a;
+box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 #logo{
@@ -137,6 +140,36 @@ color:#ddd;
 color:#2b9fff;
 }
 
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  #navbar {
+    padding: 15px 20px;
+  }
+  #hero h1 {
+    font-size: 32px;
+  }
+  #hero p {
+    font-size: 16px;
+    padding: 0 20px;
+  }
+  #startBtn, #scheduleBtn {
+    width: 90%;
+    margin: 10px auto;
+  }
+  #joinBox {
+    display: flex;
+    width: 90%;
+    gap: 10px;
+  }
+  #joinInput {
+    flex: 1;
+    width: auto;
+  }
+  #joinBtn {
+    margin-left: 0;
+  }
+}
+
 </style>
 </head>
 
@@ -144,7 +177,10 @@ color:#2b9fff;
 
 <div id="navbar">
 
-<div id="logo">VClust</div>
+<div id="logo" style="display:flex; align-items:center; gap:10px;">
+<img src="/icons/logo.png" height="30" alt="VClust Logo">
+VClust
+</div>
 
 <div id="navActions" style="display:flex; align-items:center; gap:15px;">
 <div id="profileContainer" style="display:none; align-items:center; gap:8px; background:#2a2a2a; padding:6px 14px; border-radius:30px; border: 1px solid #444;">
@@ -177,7 +213,7 @@ Schedule Meeting
 
 <div id="joinBox">
 
-<input id="joinInput" placeholder="Enter Meeting ID">
+<input id="joinInput" placeholder="Enter Meeting ID" autocomplete="off">
 
 <button id="joinBtn" onclick="joinMeeting()">
 Join
@@ -260,6 +296,12 @@ window.location="/room/"+id;
 }
 
 }
+
+document.getElementById("joinInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        joinMeeting();
+    }
+});
 
 async function loadScheduledMeetings(){
 

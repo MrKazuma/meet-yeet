@@ -186,6 +186,10 @@ function stopCamera(){
 }
 
 videoBtn.onclick = ()=>{
+    if (screenSharing) {
+        alert("Camera disabled while screen sharing.");
+        return;
+    }
     videoEnabled ? stopCamera() : startCamera();
 };
 
@@ -241,6 +245,10 @@ screenBtn.onclick = async ()=>{
     if(!screenSharing){
 
         screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true });
+
+        if (videoEnabled) {
+            stopCamera();
+        }
 
         video.srcObject = screenStream;
 
@@ -442,20 +450,26 @@ document.getElementById("upgradeBtn").onclick = async ()=>{
 
     const order = await response.json();
 
+    if(order.error) {
+        alert("Failed to create order: " + order.error);
+        return;
+    }
+
     const options = {
-        key: "YOUR_KEY_ID",
+        key: order.key,
         amount: order.amount,
         currency: order.currency,
         order_id: order.id,
         name: "VClust",
         description: "Pro Plan",
-        handler: function (){
+        handler: function (response){
             alert("Payment Successful!");
-            socket.emit("upgrade-plan","pro");
+            socket.emit("upgrade-plan", "pro");
         }
     };
 
-    new Razorpay(options).open();
+    const rzp = new window.Razorpay(options);
+    rzp.open();
 };
 
 /* ---------------- ACCOUNT ---------------- */
