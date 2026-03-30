@@ -451,40 +451,6 @@ socket.on("server-error",(payload)=>{
     window.location.href = "/";
 });
 
-/* ---------------- PAYMENT ---------------- */
-
-document.getElementById("upgradeBtn").onclick = async ()=>{
-
-    const response = await fetch("/create-order",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ plan:"pro" })
-    });
-
-    const order = await response.json();
-
-    if(order.error) {
-        alert("Failed to create order: " + order.error);
-        return;
-    }
-
-    const options = {
-        key: order.key,
-        amount: order.amount,
-        currency: order.currency,
-        order_id: order.id,
-        name: "Meet & Yeet © 2026",
-        description: "Pro Plan",
-        handler: function (response){
-            alert("Payment Successful!");
-            socket.emit("upgrade-plan", "pro");
-        }
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-};
-
 /* ---------------- ACCOUNT ---------------- */
 
 function toggleAccount(){

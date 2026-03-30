@@ -3,8 +3,8 @@
 
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meet & Yeet © 2026</title>
-<link rel="icon" type="image/png" href="/icons/logo.png">
+<title>Meet & Yeet</title>
+<link rel="icon" type="image/png" href="/icons/favicon.png">
 
 <script>
 const user = localStorage.getItem("user");
@@ -414,22 +414,6 @@ cursor:pointer;
 background:#ff9a3c;
 }
 
-/* UPGRADE BUTTON */
-
-#upgradeBtn{
-background:#ff7a00;
-border:none;
-padding:8px 12px;
-margin:10px;
-border-radius:6px;
-cursor:pointer;
-color:white;
-}
-
-#upgradeBtn:hover{
-background:#ff9a3c;
-}
-
 /* RESPONSIVE LAYOUT */
 @media (max-width: 850px) {
   #videoStage {
@@ -539,7 +523,7 @@ background:#ff9a3c;
 
 <div id="header" style="display:flex; align-items:center; gap:10px;">
 <img src="/icons/logo.png" height="30" alt="Meet & Yeet Logo">
-Meet & Yeet © 2026
+Meet & Yeet
 </div>
 
 <div id="accountIcon" onclick="toggleAccount()">
@@ -624,11 +608,8 @@ End Meeting
 <button id="sendBtn">Send</button>
 </div>
 
-<button id="upgradeBtn">Upgrade for Longer Meetings</button>
-
 </div>
 
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/script.js"></script>
 

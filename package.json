@@ -1,0 +1,13 @@
+{
+  "name": "meet-yeet-root",
+  "version": "1.0.0",
+  "description": "Meet and Yeet Video Conferencing App",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "install-all": "npm install && cd server && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

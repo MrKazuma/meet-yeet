@@ -8,9 +8,8 @@ const fs = require("fs");
 const path = require("path");
 
 const mongoose = require("mongoose");
-const Razorpay = require("razorpay");
 
-const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/vclust";
+const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/meet-yeet";
 
 mongoose.connect(mongoUri, {
   serverSelectionTimeoutMS: 10000
@@ -188,20 +187,14 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
-app.use(express.static("public", { index: false }));
+app.use(express.static(path.join(__dirname, "../client/public"), { index: false }));
+app.use(express.static(path.join(__dirname, "../client"), { index: false }));
 
 /* ------------------ IN-MEMORY DATA ------------------ */
 
 const meetings = {};
 const connectedUsers = {}; // socket.id -> { id, name, plan }
 const roomParticipants = {}; // roomId -> { socketId: displayName }
-
-/* ------------------ RAZORPAY SETUP ------------------ */
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY || "YOUR_KEY_ID",
-  key_secret: process.env.RAZORPAY_SECRET || "YOUR_KEY_SECRET"
-});
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -489,32 +482,6 @@ setInterval(() => {
 
 }, 5000);
 
-/* ------------------ CREATE PAYMENT ORDER ------------------ */
-
-app.post("/create-order", async (req, res) => {
-
-  try {
-
-    const { plan } = req.body;
-
-    let amount = 49900; // default PRO
-
-    if (plan === "business") amount = 99900;
-
-    const order = await razorpay.orders.create({
-      amount: amount,
-      currency: "INR",
-      receipt: plan || "pro_plan"
-    });
-
-    res.json({ ...order, key: process.env.RAZORPAY_KEY || "YOUR_KEY_ID" });
-
-  } catch (error) {
-    res.status(500).json({ error: "Order creation failed" });
-  }
-
-});
-
 app.post("/signup", async (req, res) => {
 
   const name = sanitizeName(req.body?.name);
@@ -770,12 +737,12 @@ app.get("/scheduled-meetings", async (req, res) => {
 
 
 app.get("/", (req,res)=>{
-res.sendFile(__dirname + "/public/home.html");
+res.sendFile(path.join(__dirname, "../client/public/home.html"));
 });
 
 app.get("/schedule", (req,res)=>{
 requireAuth(req, res, () => {
-res.sendFile(__dirname + "/public/schedule.html");
+res.sendFile(path.join(__dirname, "../client/public/schedule.html"));
 });
 });
 
@@ -793,7 +760,7 @@ if(meeting.ended){
 return res.status(403).send("This meeting has already ended");
 }
 
-res.sendFile(__dirname + "/public/index.html");
+res.sendFile(path.join(__dirname, "../client/public/index.html"));
 } catch (error) {
   return res.status(500).send("Unable to open meeting");
 }
