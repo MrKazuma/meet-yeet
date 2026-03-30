@@ -1,10 +1,11 @@
 {
   "routes": [
     { "handle": "filesystem" },
-    { "src": "^/room/(.*)", "dest": "/room.html" },
+
+    { "src": "^/$", "dest": "/index.html" },
     { "src": "^/home$", "dest": "/home.html" },
     { "src": "^/login$", "dest": "/login.html" },
     { "src": "^/schedule$", "dest": "/schedule.html" },
-    { "src": "^/$", "dest": "/index.html" }
+    { "src": "^/room/(.*)", "dest": "/room.html" }
   ]
 }
