@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/client/home.html" },
+    { "source": "/home", "destination": "/client/home.html" },
+    { "source": "/login", "destination": "/client/login.html" },
+    { "source": "/schedule", "destination": "/client/schedule.html" },
+    { "source": "/room/:match*", "destination": "/client/room.html" },
+    { "source": "/(.*)", "destination": "/client/$1" }
+  ]
+}
