@@ -1,110 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
+<title>Login - Meet & Yeet</title>
 <link rel="icon" type="image/png" href="/icons/logo.png">
+<link rel="stylesheet" href="/styles.css">
 <style>
 body{
-font-family: Arial, sans-serif;
 display:flex;
 justify-content:center;
 align-items:center;
-height:100vh;
-background:#1a1a1a;
-color:white;
+min-height:100vh;
+padding: 24px 16px;
+background:
+  radial-gradient(60% 50% at 15% 10%, rgba(255,122,0,0.12), transparent 60%),
+  radial-gradient(50% 40% at 85% 90%, rgba(47,155,255,0.10), transparent 60%),
+  var(--bg);
+}
+
+.page{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:28px;
+width:100%;
+max-width:380px;
+}
+
+.logo-lockup{
+font-size:26px;
+}
+
+.logo-lockup img{
+height:38px;
 }
 
 .box{
-background:#2a2a2a;
-padding:30px;
-border-radius:10px;
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
-width: 90%;
-max-width: 320px;
-box-sizing: border-box;
+width:100%;
+padding:32px;
 }
 
 h2{
-color:#ff7a00;
-margin-top:0;
+margin:0 0 4px;
+font-size:22px;
+letter-spacing:-0.01em;
 }
 
-input{
-display:block;
-margin:10px 0;
-padding:10px;
-width:calc(100% - 22px);
-border-radius:5px;
-border:1px solid #444;
-background:#333;
-color:white;
+.subtitle{
+margin:0 0 24px;
+color:var(--text-muted);
+font-size:14px;
 }
 
-button{
-padding:10px;
-width:100%;
-background:#ff7a00;
-color:white;
-border:none;
-border-radius:5px;
-cursor:pointer;
-margin-top:10px;
+#signupSection{
+display:none;
 }
 
-button:hover{
-background:#e06b00;
+.toggle{
+font-size:14px;
+text-align:center;
+margin-top:18px;
+color:var(--text-muted);
 }
 
-.toggle {
-font-size: 14px;
-text-align: center;
-margin-top: 15px;
-color: #ff7a00;
-cursor: pointer;
-text-decoration: underline;
-}
-
-#msg {
-color: #ff4d4d;
-text-align: center;
-font-size: 14px;
-}
-
-#signupSection {
-display: none;
+#msg{
+min-height:20px;
+color:var(--danger-hover);
+text-align:center;
+font-size:13px;
+margin:14px 0 0;
 }
 </style>
 </head>
 
 <body>
 
-<div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
-  <div style="display:flex; align-items:center; gap:10px; font-size:28px; font-weight:bold; color:#ff7a00;">
-    <img src="/icons/logo.png" height="40" alt="Meet & Yeet Logo">
-    Meet & Yeet 
+<div class="page">
+  <div class="brand-mark logo-lockup">
+    <img src="/icons/logo.png" alt="Meet & Yeet logo">
+    Meet &amp; Yeet
   </div>
-  <div class="box">
 
-<div id="loginSection">
-<h2>Login</h2>
-<input id="loginEmail" placeholder="Email">
-<input id="loginPassword" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<div class="toggle" onclick="toggleView('signup')">Don't have an account? Sign up</div>
-</div>
+  <div class="box card">
 
-<div id="signupSection">
-<h2>Sign up</h2>
-<input id="signupName" placeholder="Name">
-<input id="signupEmail" placeholder="Email">
-<input id="signupPassword" type="password" placeholder="Password (min 6 chars)">
-<button onclick="signup()">Sign up</button>
-<div class="toggle" onclick="toggleView('login')">Already have an account? Login</div>
-</div>
+    <div id="loginSection">
+      <h2>Welcome back</h2>
+      <p class="subtitle">Log in to start or join a meeting.</p>
 
-<p id="msg"></p>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" class="input" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" class="input" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
 
+      <button class="btn btn-primary btn-full" onclick="login()">Log in</button>
+      <div class="toggle">Don't have an account? <span class="btn-link clickable" onclick="toggleView('signup')">Sign up</span></div>
+    </div>
+
+    <div id="signupSection">
+      <h2>Create your account</h2>
+      <p class="subtitle">It only takes a moment.</p>
+
+      <div class="field">
+        <label for="signupName">Name</label>
+        <input id="signupName" class="input" placeholder="Jane Doe" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email</label>
+        <input id="signupEmail" class="input" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="signupPassword">Password</label>
+        <input id="signupPassword" class="input" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="signup()">Sign up</button>
+      <div class="toggle">Already have an account? <span class="btn-link clickable" onclick="toggleView('login')">Log in</span></div>
+    </div>
+
+    <p id="msg"></p>
+
+  </div>
 </div>
 
 <script>
@@ -230,6 +250,5 @@ document.getElementById("msg").innerText="Unable to reach server. Please try aga
 
 </script>
 
-</div>
 </body>
 </html>

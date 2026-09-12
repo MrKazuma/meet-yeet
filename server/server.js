@@ -3,8 +3,10 @@ const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
 const session = require("express-session");
+const { MongoStore } = require("connect-mongo");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 
 const mongoose = require("mongoose");
 
@@ -241,15 +243,71 @@ app.use((req, res, next) => {
 
   next();
 });
+const sessionMaxAgeMs = 24 * 60 * 60 * 1000;
+
+// Reuse mongoose's own MongoClient instead of opening a second parallel
+// connection - avoids duplicate connection pools/SRV polling and lets the
+// store inherit mongoose's already-handled connection failure behavior.
+const mongoSessionStore = MongoStore.create({
+  client: mongoose.connection.getClient(),
+  ttl: sessionMaxAgeMs / 1000,
+  touchAfter: 24 * 60 * 60,
+  // The default "native" mode creates a TTL index at startup, which needs a
+  // live server connection and otherwise crashes the process via an
+  // unhandled rejection when Mongo is unreachable at boot. "interval"
+  // cleans up expired sessions periodically without that hard startup
+  // dependency; expired sessions are already excluded from reads either way.
+  autoRemove: "interval",
+  autoRemoveInterval: 60
+});
+
+mongoSessionStore.on("error", (error) => {
+  console.error("Session store error:", error.message);
+});
+
+const memorySessionStore = new session.MemoryStore();
+
+// Sessions persist in Mongo (so logins survive restarts / work across
+// multiple server instances) when it's reachable, and fall back to the
+// same in-memory behavior as the rest of the app (see isDbAvailable) so a
+// down/unreachable database doesn't take login down with it.
+class HybridSessionStore extends session.Store {
+  activeStore() {
+    return isDbAvailable() ? mongoSessionStore : memorySessionStore;
+  }
+
+  get(sid, callback) {
+    this.activeStore().get(sid, callback);
+  }
+
+  set(sid, sessionData, callback) {
+    this.activeStore().set(sid, sessionData, callback);
+  }
+
+  destroy(sid, callback) {
+    this.activeStore().destroy(sid, callback);
+  }
+
+  touch(sid, sessionData, callback) {
+    const store = this.activeStore();
+    if (typeof store.touch === "function") {
+      store.touch(sid, sessionData, callback);
+    } else if (callback) {
+      callback();
+    }
+  }
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "fallback-secret",
   resave: false,
   saveUninitialized: false,
+  store: new HybridSessionStore(),
   cookie: {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: sessionMaxAgeMs
   }
 }));
 const clientDir = path.join(__dirname, "../client");
@@ -488,7 +546,15 @@ io.on("connection", socket => {
     });
 
     /* -------- WEBRTC SIGNALING -------- */
+    function isInRoom(targetId) {
+      return Boolean(roomParticipants[roomId] && roomParticipants[roomId][targetId]);
+    }
+
     socket.on("webrtc-offer", (data) => {
+      if (!data || !isInRoom(data.to)) {
+        return;
+      }
+
       io.to(data.to).emit("webrtc-offer", {
         offer: data.offer,
         from: socket.id
@@ -496,6 +562,10 @@ io.on("connection", socket => {
     });
 
     socket.on("webrtc-answer", (data) => {
+      if (!data || !isInRoom(data.to)) {
+        return;
+      }
+
       io.to(data.to).emit("webrtc-answer", {
         answer: data.answer,
         from: socket.id
@@ -503,6 +573,10 @@ io.on("connection", socket => {
     });
 
     socket.on("webrtc-ice-candidate", (data) => {
+      if (!data || !isInRoom(data.to)) {
+        return;
+      }
+
       io.to(data.to).emit("webrtc-ice-candidate", {
         candidate: data.candidate,
         from: socket.id
@@ -590,10 +664,12 @@ app.post("/signup", async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = {
       name,
       email,
-      password,
+      password: hashedPassword,
       role: "user"
     };
 
@@ -632,12 +708,9 @@ app.post("/login", async (req, res) => {
   try {
     let user = null;
     if (isDbAvailable()) {
-      user = await User.findOne({ 
-        email: normalizedEmail, 
-        password: normalizedPassword 
-      }).lean();
+      user = await User.findOne({ email: normalizedEmail });
     } else {
-      user = memoryUsers.find(u => u.email === normalizedEmail && u.password === normalizedPassword);
+      user = memoryUsers.find(u => u.email === normalizedEmail);
     }
 
     if (!user) {
@@ -645,6 +718,29 @@ app.post("/login", async (req, res) => {
         success: false,
         message: "Invalid email or password"
       });
+    }
+
+    const isBcryptHash = /^\$2[aby]\$/.test(user.password);
+    let passwordMatches = isBcryptHash
+      ? await bcrypt.compare(normalizedPassword, user.password)
+      : user.password === normalizedPassword;
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // Transparently upgrade legacy plaintext passwords to bcrypt hashes on successful login.
+    if (!isBcryptHash) {
+      const rehashed = await bcrypt.hash(normalizedPassword, 10);
+
+      if (isDbAvailable()) {
+        await User.updateOne({ _id: user._id }, { password: rehashed });
+      } else {
+        user.password = rehashed;
+      }
     }
 
     req.session.user = {

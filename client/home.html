@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meet & Yeet</title>
 <link rel="icon" type="image/png" href="/icons/logo.png">
+<link rel="stylesheet" href="/styles.css">
 
 <style>
 
 body{
-margin:0;
-font-family:Arial, sans-serif;
-background:#1a1a1a;
-color:white;
+background:
+  radial-gradient(55% 45% at 12% 0%, rgba(255,122,0,0.14), transparent 60%),
+  radial-gradient(45% 40% at 92% 15%, rgba(47,155,255,0.12), transparent 60%),
+  var(--bg);
 }
 
 /* NAVBAR */
@@ -21,30 +23,46 @@ color:white;
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:20px 40px;
-background:#2a2a2a;
-box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+padding:18px 40px;
+position: sticky;
+top: 0;
+z-index: 20;
+background: rgba(11,11,20,0.75);
+backdrop-filter: blur(14px);
+-webkit-backdrop-filter: blur(14px);
+border-bottom: 1px solid var(--border);
 }
 
-#logo{
-font-size:22px;
-font-weight:bold;
-color:#ff7a00;
+#logo img{
+height:30px;
 }
 
-#loginBtn{
-background:#ff7a00;
-border:none;
-padding:10px 18px;
-border-radius:6px;
-color:white;
-cursor:pointer;
+#navActions{
+display:flex;
+align-items:center;
+gap:15px;
+}
+
+#profileContainer{
+display:none;
+align-items:center;
+gap:8px;
+background:var(--surface-alt);
+padding:8px 16px;
+border-radius:var(--radius-pill);
+border: 1px solid var(--border);
+}
+
+#profileName{
+color:var(--text);
+font-weight:600;
+font-size:14px;
 }
 
 /* HERO */
 
 #hero{
-height:80vh;
+padding: 90px 20px 60px;
 display:flex;
 flex-direction:column;
 justify-content:center;
@@ -53,120 +71,126 @@ text-align:center;
 }
 
 #hero h1{
-font-size:48px;
-margin-bottom:10px;
+font-size:52px;
+font-weight:800;
+letter-spacing:-0.02em;
+margin:0 0 14px;
+max-width: 700px;
 }
 
 #hero p{
-color:#aaa;
+color:var(--text-muted);
 font-size:18px;
-margin-bottom:30px;
+margin:0 0 34px;
 }
 
-#startBtn{
-background:#ff7a00;
-border:none;
-padding:14px 30px;
-font-size:18px;
-border-radius:8px;
-cursor:pointer;
+#hero p b{
+color:var(--text);
+font-weight:600;
 }
 
-#scheduleBtn{
-margin-top:12px;
-background:#2b9fff;
-border:none;
-padding:12px 24px;
-font-size:16px;
-border-radius:8px;
-cursor:pointer;
-color:white;
-}
-
-#scheduleBtn:hover{
-background:#4aaeff;
+#heroActions{
+display:flex;
+gap:14px;
+flex-wrap:wrap;
+justify-content:center;
 }
 
 /* JOIN BOX */
 
 #joinBox{
-margin-top:30px;
+margin-top:40px;
+display:flex;
+gap:8px;
 }
 
 #joinInput{
-padding:12px;
-width:220px;
-border:none;
-border-radius:6px;
-}
-
-#joinBtn{
-padding:12px 16px;
-border:none;
-background:#ff7a00;
-color:white;
-border-radius:6px;
-cursor:pointer;
-margin-left:5px;
+width:240px;
 }
 
 #upcoming{
-margin-top:34px;
-background:#1d1d1d;
-padding:16px;
-border-radius:10px;
-width:420px;
-max-width:90%;
+margin-top:40px;
+padding:22px;
+width:460px;
+max-width:92vw;
 text-align:left;
 }
 
 #upcoming h3{
-margin:0 0 10px;
-font-size:18px;
-color:#ff7a00;
+margin:0 0 14px;
+font-size:16px;
+font-weight:700;
+color:var(--text);
+display:flex;
+align-items:center;
+gap:8px;
 }
 
 #upcomingList{
 margin:0;
-padding-left:18px;
+padding:0;
+list-style:none;
+display:flex;
+flex-direction:column;
+gap:10px;
 }
 
 #upcomingList li{
-margin:8px 0;
-color:#ddd;
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+padding:10px 12px;
+background:var(--surface-alt);
+border:1px solid var(--border);
+border-radius:var(--radius-md);
+color:var(--text-muted);
+font-size:14px;
 }
 
-#upcomingList a{
-color:#2b9fff;
+#upcomingList li a{
+font-weight:600;
+color:var(--accent);
+text-decoration:none;
+}
+
+#upcomingList li a:hover{
+color:var(--accent-hover);
+text-decoration:underline;
 }
 
 /* RESPONSIVE */
+@media (max-width: 480px) {
+  #logo .logo-text {
+    display: none;
+  }
+}
+
 @media (max-width: 600px) {
   #navbar {
-    padding: 15px 20px;
+    padding: 14px 18px;
+  }
+  #hero {
+    padding: 56px 16px 40px;
   }
   #hero h1 {
-    font-size: 32px;
+    font-size: 34px;
   }
   #hero p {
     font-size: 16px;
-    padding: 0 20px;
   }
-  #startBtn, #scheduleBtn {
-    width: 90%;
-    margin: 10px auto;
+  #heroActions {
+    width: 100%;
+  }
+  #heroActions .btn {
+    flex: 1 1 auto;
   }
   #joinBox {
-    display: flex;
-    width: 90%;
-    gap: 10px;
+    width: 100%;
   }
   #joinInput {
     flex: 1;
     width: auto;
-  }
-  #joinBtn {
-    margin-left: 0;
   }
 }
 
@@ -177,20 +201,20 @@ color:#2b9fff;
 
 <div id="navbar">
 
-<div id="logo" style="display:flex; align-items:center; gap:10px;">
-<img src="/icons/logo.png" height="30" alt="Meet & Yeet Logo">
-Meet & Yeet
+<div id="logo" class="brand-mark">
+<img src="/icons/logo.png" alt="Meet & Yeet logo">
+<span class="logo-text">Meet &amp; Yeet</span>
 </div>
 
-<div id="navActions" style="display:flex; align-items:center; gap:15px;">
-<div id="profileContainer" style="display:none; align-items:center; gap:8px; background:#2a2a2a; padding:6px 14px; border-radius:30px; border: 1px solid #444;">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<div id="navActions">
+<div id="profileContainer">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
   </svg>
-  <span id="profileName" style="color:#ddd; font-weight:600; font-size:14px; margin-top:2px;"></span>
+  <span id="profileName"></span>
 </div>
-<button id="loginBtn" onclick="handleAuthButton()">
+<button id="loginBtn" class="btn btn-ghost" onclick="handleAuthButton()">
 Login
 </button>
 </div>
@@ -199,31 +223,35 @@ Login
 
 <div id="hero">
 
-<h1>Video Meetings Made Simple</h1>
+<h1>Video meetings made simple</h1>
 
-<p><b>Start or join meetings instantly with Meet & Yeet © 2026.</b></p>
-<p> “Click. Meet. Yeet.”</p>
+<p><b>Start or join meetings instantly with Meet &amp; Yeet © 2026.</b><br>"Click. Meet. Yeet."</p>
 
-<button id="startBtn" onclick="createMeeting()">
-Start Meeting
+<div id="heroActions">
+<button id="startBtn" class="btn btn-primary" onclick="createMeeting()">
+Start meeting
 </button>
 
-<button id="scheduleBtn" onclick="goToSchedule()">
-Schedule Meeting
+<button id="scheduleBtn" class="btn btn-secondary" onclick="goToSchedule()">
+Schedule meeting
 </button>
+</div>
 
 <div id="joinBox">
 
-<input id="joinInput" placeholder="Enter Meeting ID" autocomplete="off">
+<input id="joinInput" class="input" placeholder="Enter meeting ID" autocomplete="off">
 
-<button id="joinBtn" onclick="joinMeeting()">
+<button id="joinBtn" class="btn btn-ghost" onclick="joinMeeting()">
 Join
 </button>
 
 </div>
 
-<div id="upcoming">
-<h3>Upcoming Meetings</h3>
+<div id="upcoming" class="card">
+<h3>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+  Upcoming meetings
+</h3>
 <ul id="upcomingList">
 <li>Loading scheduled meetings...</li>
 </ul>
@@ -330,7 +358,7 @@ list.innerHTML="";
 data.meetings.slice(0,5).forEach(meeting=>{
 const li=document.createElement("li");
 const when=new Date(meeting.time).toLocaleString();
-li.innerHTML=`${meeting.title} - ${when} (<a href="${meeting.link}">Join</a>)`;
+li.innerHTML=`<span>${meeting.title} &middot; ${when}</span><a href="${meeting.link}">Join</a>`;
 list.appendChild(li);
 });
 
